@@ -64,6 +64,13 @@
             <span class="stat-label">购物车</span>
           </div>
         </div>
+        <div class="stat-card" @click="goToAchievements">
+          <el-icon :size="32" color="#ffd700"><Trophy /></el-icon>
+          <div class="stat-info">
+            <span class="stat-value">{{ achievementStats.unlockedCount || 0 }}/{{ achievementStats.totalCount || 0 }}</span>
+            <span class="stat-label">成就</span>
+          </div>
+        </div>
         <div class="stat-card" @click="goToWishlist">
           <el-icon :size="32" color="#ffd700"><Star /></el-icon>
           <div class="stat-info">
@@ -137,8 +144,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useCartStore } from '@/store/cart'
-import { libraryApi, wishlistApi, couponApi } from '@/api'
+import { libraryApi, wishlistApi, couponApi, achievementApi } from '@/api'
 import { ElMessage } from 'element-plus'
+import type { AchievementStats } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -158,6 +166,12 @@ const libraryCount = ref(0)
 const wishlistCount = ref(0)
 const couponCount = ref(0)
 const cartCount = computed(() => cartStore.count)
+const achievementStats = ref<AchievementStats>({
+  totalCount: 0,
+  unlockedCount: 0,
+  totalPoints: 0,
+  completionRate: 0
+})
 
 const showEditDialog = ref(false)
 const showRechargeDialog = ref(false)
@@ -184,7 +198,8 @@ onMounted(async () => {
   await Promise.all([
     fetchLibraryCount(),
     fetchWishlistCount(),
-    fetchCouponCount()
+    fetchCouponCount(),
+    fetchAchievementStats()
   ])
 })
 
@@ -215,6 +230,15 @@ async function fetchCouponCount() {
   }
 }
 
+async function fetchAchievementStats() {
+  try {
+    const res = await achievementApi.getAchievementStats()
+    achievementStats.value = res.data.data || achievementStats.value
+  } catch (error) {
+    // ignore
+  }
+}
+
 function goToLibrary() {
   router.push('/library')
 }
@@ -229,6 +253,10 @@ function goToWishlist() {
 
 function goToCoupons() {
   router.push('/coupons')
+}
+
+function goToAchievements() {
+  router.push('/achievements')
 }
 
 async function handleSaveProfile() {
@@ -346,7 +374,7 @@ async function handleRecharge() {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
 }
 

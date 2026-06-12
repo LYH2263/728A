@@ -26,6 +26,7 @@ public class ReviewService {
     private final GameMapper gameMapper;
     private final UserLibraryMapper userLibraryMapper;
     private final RateLimitService rateLimitService;
+    private final AchievementService achievementService;
     
     /**
      * 获取游戏评论列表
@@ -76,6 +77,13 @@ public class ReviewService {
         updateGameRating(gameId);
         
         log.info("用户 {} 对游戏 {} 发表评论", userId, gameId);
+
+        try {
+            achievementService.triggerReviewCreated(userId, review.getId());
+        } catch (Exception e) {
+            log.error("触发成就计算失败: reviewId={}, userId={}", review.getId(), userId, e);
+        }
+
         return review;
     }
     

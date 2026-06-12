@@ -63,6 +63,10 @@
                   <el-icon><Collection /></el-icon>
                   我的游戏
                 </el-dropdown-item>
+                <el-dropdown-item command="achievements">
+                  <el-icon><Trophy /></el-icon>
+                  成就中心
+                </el-dropdown-item>
                 <el-dropdown-item command="wishlist">
                   <el-icon><Star /></el-icon>
                   愿望单
@@ -125,6 +129,10 @@
           <router-link to="/orders" class="mobile-nav-item" @click="showMobileMenu = false">
             <el-icon><Document /></el-icon>
             我的订单
+          </router-link>
+          <router-link to="/achievements" class="mobile-nav-item" @click="showMobileMenu = false">
+            <el-icon><Trophy /></el-icon>
+            成就中心
           </router-link>
           <router-link to="/profile" class="mobile-nav-item" @click="showMobileMenu = false">
             <el-icon><User /></el-icon>
@@ -196,6 +204,9 @@ function handleCommand(command: string) {
       break
     case 'library':
       router.push('/library')
+      break
+    case 'achievements':
+      router.push('/achievements')
       break
     case 'wishlist':
       router.push('/wishlist')

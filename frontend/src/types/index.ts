@@ -194,3 +194,42 @@ export interface Order {
   orderItems?: OrderItem[]
   userCoupon?: UserCoupon
 }
+
+// 成就定义
+export interface Achievement {
+  id: number
+  code: string
+  name: string
+  description: string
+  icon?: string
+  category: 'GENERAL' | 'PURCHASE' | 'PLAYTIME' | 'REVIEW' | 'COLLECTION'
+  targetValue: number
+  isProgress: number
+  rarity: 1 | 2 | 3 | 4
+  points: number
+  eventType: string
+  ruleConfig?: string
+  sortOrder: number
+  status: number
+}
+
+// 用户成就进度
+export interface UserAchievement {
+  id?: number
+  userId: number
+  achievementId: number
+  progress: number
+  targetValue: number
+  isUnlocked: number
+  unlockedAt?: string
+  createdAt?: string
+  achievement: Achievement
+}
+
+// 成就统计
+export interface AchievementStats {
+  totalCount: number
+  unlockedCount: number
+  totalPoints: number
+  completionRate: number
+}

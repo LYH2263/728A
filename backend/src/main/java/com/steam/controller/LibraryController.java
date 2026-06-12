@@ -48,4 +48,15 @@ public class LibraryController {
         int count = libraryService.getLibraryCount(userId);
         return Result.success(count);
     }
+
+    @PostMapping("/{gameId}/playtime")
+    public Result<Void> updatePlayTime(
+            HttpServletRequest request,
+            @PathVariable Long gameId,
+            @RequestBody java.util.Map<String, Integer> body) {
+        Long userId = (Long) request.getAttribute("userId");
+        Integer minutes = body.get("minutes");
+        libraryService.updatePlayTime(userId, gameId, minutes);
+        return Result.successMessage("游玩时长已更新");
+    }
 }

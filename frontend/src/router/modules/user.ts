@@ -30,6 +30,12 @@ const userRoutes: RouteRecordRaw[] = [
     name: 'Wishlist',
     component: () => import('@/views/Wishlist.vue'),
     meta: { title: '愿望单', requiresAuth: true }
+  },
+  {
+    path: '/achievements',
+    name: 'Achievements',
+    component: () => import('@/views/Achievements.vue'),
+    meta: { title: '成就中心', requiresAuth: true }
   }
 ]
 

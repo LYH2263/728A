@@ -44,4 +44,12 @@ public interface OrderMapper {
 
     @Select("SELECT * FROM order_items WHERE order_id = #{orderId}")
     List<OrderItem> findOrderItemsByOrderId(Long orderId);
+
+    @Select("SELECT DISTINCT o.* FROM orders o WHERE o.user_id = #{userId} AND (o.status = 'PAID' OR o.status = 'COMPLETED') ORDER BY o.created_at DESC")
+    List<Order> findCompletedByUserId(Long userId);
+
+    @Select("SELECT COUNT(DISTINCT oi.game_id) FROM orders o " +
+            "INNER JOIN order_items oi ON o.id = oi.order_id " +
+            "WHERE o.user_id = #{userId} AND (o.status = 'PAID' OR o.status = 'COMPLETED')")
+    Integer countPaidGamesByUserId(Long userId);
 }

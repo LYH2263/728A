@@ -391,3 +391,59 @@ INSERT INTO `user_coupons` (`user_id`, `coupon_id`, `status`) VALUES
 (2, 3, 'UNUSED'),
 (3, 2, 'UNUSED'),
 (3, 4, 'UNUSED');
+
+-- ===================== 成就系统 =====================
+
+-- 成就定义表
+CREATE TABLE IF NOT EXISTS `achievements` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `code` VARCHAR(100) NOT NULL UNIQUE COMMENT '成就唯一编码',
+    `name` VARCHAR(100) NOT NULL COMMENT '成就名称',
+    `description` VARCHAR(500) NOT NULL COMMENT '成就描述',
+    `icon` VARCHAR(200) COMMENT '成就图标/徽章图片URL',
+    `category` VARCHAR(50) DEFAULT 'GENERAL' COMMENT '成就分类: GENERAL, PURCHASE, PLAYTIME, REVIEW, COLLECTION',
+    `target_value` INT DEFAULT 1 COMMENT '目标值(进度型成就的目标数, 即时成就为1)',
+    `is_progress` TINYINT DEFAULT 1 COMMENT '是否进度型成就: 0否 1是',
+    `rarity` INT DEFAULT 1 COMMENT '稀有度: 1普通 2稀有 3史诗 4传说',
+    `points` INT DEFAULT 10 COMMENT '成就点数',
+    `event_type` VARCHAR(50) NOT NULL COMMENT '触发事件类型: ORDER_PAID, REVIEW_CREATED, PLAYTIME_UPDATED, LIBRARY_UPDATED',
+    `rule_config` JSON COMMENT '规则配置JSON(如分类ID、具体条件等)',
+    `sort_order` INT DEFAULT 0 COMMENT '排序',
+    `status` TINYINT DEFAULT 1 COMMENT '状态: 0禁用 1启用',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_code` (`code`),
+    INDEX `idx_event_type` (`event_type`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='成就定义表';
+
+-- 用户成就进度表
+CREATE TABLE IF NOT EXISTS `user_achievements` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL,
+    `achievement_id` BIGINT NOT NULL,
+    `progress` INT DEFAULT 0 COMMENT '当前进度',
+    `target_value` INT DEFAULT 1 COMMENT '目标值(冗余存储成就定义的目标值)',
+    `is_unlocked` TINYINT DEFAULT 0 COMMENT '是否已解锁: 0否 1是',
+    `unlocked_at` DATETIME COMMENT '解锁时间',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`achievement_id`) REFERENCES `achievements`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `uk_user_achievement` (`user_id`, `achievement_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_unlocked` (`user_id`, `is_unlocked`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户成就进度表';
+
+-- 插入初始成就数据
+INSERT INTO `achievements` (`code`, `name`, `description`, `icon`, `category`, `target_value`, `is_progress`, `rarity`, `points`, `event_type`, `rule_config`, `sort_order`) VALUES
+('FIRST_PURCHASE', '初次购物', '完成首次游戏购买', '🛒', 'PURCHASE', 1, 0, 1, 10, 'ORDER_PAID', NULL, 1),
+('ACTION_COLLECTOR', '动作收藏家', '拥有5款动作类游戏', '⚔️', 'COLLECTION', 5, 1, 2, 30, 'LIBRARY_UPDATED', '{"category_id": 1}', 2),
+('PLAYTIME_100H', '游戏达人', '累计游玩时长达到100小时', '⏱️', 'PLAYTIME', 6000, 1, 3, 50, 'PLAYTIME_UPDATED', NULL, 3),
+('REVIEW_MASTER', '评论家', '发表10条游戏评论', '📝', 'REVIEW', 10, 1, 2, 30, 'REVIEW_CREATED', NULL, 4),
+('RPG_FAN', 'RPG爱好者', '拥有3款角色扮演游戏', '🧙', 'COLLECTION', 3, 1, 1, 20, 'LIBRARY_UPDATED', '{"category_id": 2}', 5),
+('SHOPAHOLIC', '购物狂', '累计购买10款游戏', '💰', 'PURCHASE', 10, 1, 3, 50, 'ORDER_PAID', NULL, 6),
+('SPEED_BUYER', '即刻行动', '注册后24小时内完成首次购买', '⚡', 'PURCHASE', 1, 0, 2, 20, 'ORDER_PAID', '{"within_hours": 24}', 7),
+('VETERAN_PLAYER', '资深玩家', '累计游玩时长达到500小时', '🏆', 'PLAYTIME', 30000, 1, 4, 100, 'PLAYTIME_UPDATED', NULL, 8),
+('COLLECTOR_20', '收藏家', '拥有20款不同游戏', '🎮', 'COLLECTION', 20, 1, 4, 80, 'LIBRARY_UPDATED', NULL, 9),
+('FIRST_REVIEW', '初出茅庐', '发表第一条游戏评论', '✍️', 'REVIEW', 1, 0, 1, 10, 'REVIEW_CREATED', NULL, 10);

@@ -47,4 +47,12 @@ public interface UserLibraryMapper {
     
     @Select("SELECT EXISTS(SELECT 1 FROM user_library WHERE user_id = #{userId} AND game_id = #{gameId})")
     boolean existsByUserIdAndGameId(@Param("userId") Long userId, @Param("gameId") Long gameId);
+
+    @Select("SELECT COUNT(*) FROM user_library ul " +
+            "INNER JOIN game_categories gc ON ul.game_id = gc.game_id " +
+            "WHERE ul.user_id = #{userId} AND gc.category_id = #{categoryId}")
+    Integer countByUserIdAndCategory(@Param("userId") Long userId, @Param("categoryId") Long categoryId);
+
+    @Select("SELECT COALESCE(SUM(play_time), 0) FROM user_library WHERE user_id = #{userId}")
+    Integer getTotalPlaytimeByUserId(Long userId);
 }

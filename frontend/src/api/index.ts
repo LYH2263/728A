@@ -144,3 +144,16 @@ export const reviewApi = {
     api.post('/reviews', data),
   markHelpful: (reviewId: number) => api.post(`/reviews/${reviewId}/helpful`)
 }
+
+// 成就相关
+export const achievementApi = {
+  getMyAchievements: () => api.get('/achievements/my'),
+  getAchievementStats: () => api.get('/achievements/stats'),
+  getRecentUnlocked: (limit: number = 5) => api.get('/achievements/recent', { params: { limit } })
+}
+
+// 游戏库扩展
+export const libraryExtApi = {
+  updatePlayTime: (gameId: number, minutes: number) =>
+    api.post(`/library/${gameId}/playtime`, { minutes })
+}

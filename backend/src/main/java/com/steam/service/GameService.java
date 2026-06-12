@@ -1,5 +1,6 @@
 package com.steam.service;
 
+import com.steam.dto.AdminGameQueryDTO;
 import com.steam.dto.GameQueryDTO;
 import com.steam.dto.PageResult;
 import com.steam.entity.Category;
@@ -8,6 +9,7 @@ import com.steam.mapper.CategoryMapper;
 import com.steam.mapper.GameMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,6 +25,9 @@ public class GameService {
     
     private final GameMapper gameMapper;
     private final CategoryMapper categoryMapper;
+    
+    @Value("${game.stock-threshold:10}")
+    private Integer stockThreshold;
     
     /**
      * 获取游戏详情
@@ -132,5 +137,68 @@ public class GameService {
      */
     public List<Category> getGameCategories(Long gameId) {
         return categoryMapper.findByGameId(gameId);
+    }
+    
+    public PageResult<Game> adminSearchGames(AdminGameQueryDTO query) {
+        int offset = (query.getPage() - 1) * query.getSize();
+        
+        List<Game> games = gameMapper.findByAdminCondition(
+                query.getKeyword(),
+                query.getStatus(),
+                query.getLowStockOnly(),
+                stockThreshold,
+                query.getSortBy(),
+                query.getSortOrder(),
+                offset,
+                query.getSize()
+        );
+        
+        for (Game game : games) {
+            game.setLowStock(game.getStock() != null && game.getStock() < stockThreshold);
+        }
+        
+        Long total = gameMapper.countByAdminCondition(
+                query.getKeyword(),
+                query.getStatus(),
+                query.getLowStockOnly(),
+                stockThreshold
+        );
+        
+        return PageResult.of(games, total, query.getPage(), query.getSize());
+    }
+    
+    public int batchUpdateStock(List<Long> gameIds, Integer stock) {
+        if (gameIds == null || gameIds.isEmpty()) {
+            return 0;
+        }
+        if (stock == null || stock < 0) {
+            throw new RuntimeException("库存数量不能为负数");
+        }
+        return gameMapper.updateStockByIds(gameIds, stock);
+    }
+    
+    public int updateGameStock(Long gameId, Integer stock) {
+        if (stock == null || stock < 0) {
+            throw new RuntimeException("库存数量不能为负数");
+        }
+        return gameMapper.updateStockByIds(List.of(gameId), stock);
+    }
+    
+    public int batchUpdateStatus(List<Long> gameIds, Integer status) {
+        if (gameIds == null || gameIds.isEmpty()) {
+            return 0;
+        }
+        if (status == null || (status != 0 && status != 1)) {
+            throw new RuntimeException("状态值无效");
+        }
+        return gameMapper.updateStatusByIds(gameIds, status);
+    }
+    
+    public int getLowStockCount() {
+        return gameMapper.countLowStock(stockThreshold);
+    }
+    
+    public int getStockThreshold() {
+        return stockThreshold;
     }
 }

@@ -58,4 +58,37 @@ public interface GameMapper {
 
     @Select("SELECT * FROM games WHERE id = #{id}")
     Game findByIdIgnoreStatus(Long id);
+
+    List<Game> findByAdminCondition(@Param("keyword") String keyword,
+                                    @Param("status") Integer status,
+                                    @Param("lowStockOnly") Boolean lowStockOnly,
+                                    @Param("stockThreshold") Integer stockThreshold,
+                                    @Param("sortBy") String sortBy,
+                                    @Param("sortOrder") String sortOrder,
+                                    @Param("offset") Integer offset,
+                                    @Param("limit") Integer limit);
+
+    Long countByAdminCondition(@Param("keyword") String keyword,
+                               @Param("status") Integer status,
+                               @Param("lowStockOnly") Boolean lowStockOnly,
+                               @Param("stockThreshold") Integer stockThreshold);
+
+    @Update("<script>" +
+            "UPDATE games SET stock = #{stock} WHERE id IN " +
+            "<foreach collection='gameIds' item='id' open='(' separator=',' close=')'>" +
+            "#{id}" +
+            "</foreach>" +
+            "</script>")
+    int updateStockByIds(@Param("gameIds") List<Long> gameIds, @Param("stock") Integer stock);
+
+    @Update("<script>" +
+            "UPDATE games SET status = #{status} WHERE id IN " +
+            "<foreach collection='gameIds' item='id' open='(' separator=',' close=')'>" +
+            "#{id}" +
+            "</foreach>" +
+            "</script>")
+    int updateStatusByIds(@Param("gameIds") List<Long> gameIds, @Param("status") Integer status);
+
+    @Select("SELECT COUNT(*) FROM games WHERE stock < #{threshold}")
+    int countLowStock(@Param("threshold") Integer threshold);
 }

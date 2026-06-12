@@ -34,6 +34,10 @@ jwt:
   secret: SteamGamePlatformSecretKey2024VeryLongSecretKeyForJWTTokenGeneration
   expiration: 86400000  # 24小时
 
+# 游戏配置
+game:
+  stock-threshold: 10
+
 # 日志配置
 logging:
   level:

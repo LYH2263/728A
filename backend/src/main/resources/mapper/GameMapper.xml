@@ -89,4 +89,69 @@
             AND g.is_featured = 1
         </if>
     </select>
+
+    <select id="findByAdminCondition" resultType="com.steam.entity.Game">
+        SELECT g.*
+        FROM games g
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (g.title LIKE CONCAT('%', #{keyword}, '%')
+                    OR g.description LIKE CONCAT('%', #{keyword}, '%')
+                    OR g.developer LIKE CONCAT('%', #{keyword}, '%')
+                    OR g.publisher LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="status != null">
+                AND g.status = #{status}
+            </if>
+            <if test="lowStockOnly != null and lowStockOnly == true">
+                AND g.stock &lt; #{stockThreshold}
+            </if>
+        </where>
+        <choose>
+            <when test="sortBy == 'stock'">
+                ORDER BY g.stock
+            </when>
+            <when test="sortBy == 'sales'">
+                ORDER BY g.sales_count
+            </when>
+            <when test="sortBy == 'price'">
+                ORDER BY COALESCE(g.discount_price, g.original_price)
+            </when>
+            <when test="sortBy == 'status'">
+                ORDER BY g.status
+            </when>
+            <otherwise>
+                ORDER BY g.id
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="sortOrder == 'asc'">
+                ASC
+            </when>
+            <otherwise>
+                DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countByAdminCondition" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM games g
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (g.title LIKE CONCAT('%', #{keyword}, '%')
+                    OR g.description LIKE CONCAT('%', #{keyword}, '%')
+                    OR g.developer LIKE CONCAT('%', #{keyword}, '%')
+                    OR g.publisher LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="status != null">
+                AND g.status = #{status}
+            </if>
+            <if test="lowStockOnly != null and lowStockOnly == true">
+                AND g.stock &lt; #{stockThreshold}
+            </if>
+        </where>
+    </select>
+
 </mapper>

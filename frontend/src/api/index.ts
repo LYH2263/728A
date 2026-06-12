@@ -197,3 +197,16 @@ export const activityApi = {
   getMyActivities: (page: number = 1, size: number = 10) =>
     api.get('/activities/mine', { params: { page, size } })
 }
+
+// 管理员 - 游戏管理
+export const adminGameApi = {
+  getGames: (params: Record<string, any>) =>
+    api.get('/admin/games', { params }),
+  updateStock: (id: number, stock: number) =>
+    api.put(`/admin/games/${id}/stock`, { stock }),
+  batchUpdateStock: (gameIds: number[], stock: number) =>
+    api.put('/admin/games/stock/batch', { gameIds, stock }),
+  batchUpdateStatus: (gameIds: number[], status: number) =>
+    api.put('/admin/games/status/batch', { gameIds, status }),
+  getStats: () => api.get('/admin/games/stats')
+}

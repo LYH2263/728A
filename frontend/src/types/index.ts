@@ -54,7 +54,9 @@ export interface Game {
   salesCount?: number
   rating?: number
   ratingCount?: number
+  status?: number
   isFeatured?: number
+  lowStock?: boolean
 }
 
 // 分类

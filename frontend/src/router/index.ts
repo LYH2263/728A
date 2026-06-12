@@ -3,6 +3,7 @@ import { useUserStore } from '@/store/user'
 import gameRoutes from './modules/game'
 import userRoutes from './modules/user'
 import orderRoutes from './modules/order'
+import adminRoutes from './modules/admin'
 
 const baseRoutes: RouteRecordRaw[] = [
   {
@@ -24,6 +25,7 @@ const routes: RouteRecordRaw[] = [
   ...gameRoutes,
   ...userRoutes,
   ...orderRoutes,
+  ...adminRoutes,
   ...baseRoutes.filter(r => r.path !== '/')
 ]
 
@@ -41,6 +43,8 @@ router.beforeEach((to, _from, next) => {
   const userStore = useUserStore()
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
     next({ name: 'Login', query: { redirect: to.path } })
+  } else if (to.meta.requiresAdmin && !userStore.isAdmin) {
+    next({ name: 'Home' })
   } else {
     next()
   }

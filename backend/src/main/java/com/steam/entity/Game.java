@@ -35,4 +35,5 @@ public class Game {
     private Integer isFeatured;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private transient Boolean lowStock;
 }

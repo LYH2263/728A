@@ -45,6 +45,12 @@ public interface OrderMapper {
     @Select("SELECT * FROM order_items WHERE order_id = #{orderId}")
     List<OrderItem> findOrderItemsByOrderId(Long orderId);
 
+    @Select("SELECT * FROM order_items WHERE id = #{id}")
+    OrderItem findOrderItemById(Long id);
+
+    @Update("UPDATE orders SET status = #{status}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
+    int updateStatusOnly(@Param("id") Long id, @Param("status") String status);
+
     @Select("SELECT DISTINCT o.* FROM orders o WHERE o.user_id = #{userId} AND (o.status = 'PAID' OR o.status = 'COMPLETED') ORDER BY o.created_at DESC")
     List<Order> findCompletedByUserId(Long userId);
 

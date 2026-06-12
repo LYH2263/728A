@@ -36,6 +36,12 @@ const userRoutes: RouteRecordRaw[] = [
     name: 'Achievements',
     component: () => import('@/views/Achievements.vue'),
     meta: { title: '成就中心', requiresAuth: true }
+  },
+  {
+    path: '/refunds',
+    name: 'Refunds',
+    component: () => import('@/views/RefundRecords.vue'),
+    meta: { title: '退款记录', requiresAuth: true }
   }
 ]
 

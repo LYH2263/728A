@@ -85,6 +85,13 @@
             <span class="stat-label">优惠券</span>
           </div>
         </div>
+        <div class="stat-card" @click="goToRefunds">
+          <el-icon :size="32" color="#e6a23c"><RefreshLeft /></el-icon>
+          <div class="stat-info">
+            <span class="stat-value">{{ refundCount }}</span>
+            <span class="stat-label">退款记录</span>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -144,7 +151,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useCartStore } from '@/store/cart'
-import { libraryApi, wishlistApi, couponApi, achievementApi } from '@/api'
+import { libraryApi, wishlistApi, couponApi, achievementApi, refundApi } from '@/api'
 import { ElMessage } from 'element-plus'
 import type { AchievementStats } from '@/types'
 
@@ -165,6 +172,7 @@ function getAvatarUrl(avatar: string | undefined): string {
 const libraryCount = ref(0)
 const wishlistCount = ref(0)
 const couponCount = ref(0)
+const refundCount = ref(0)
 const cartCount = computed(() => cartStore.count)
 const achievementStats = ref<AchievementStats>({
   totalCount: 0,
@@ -199,7 +207,8 @@ onMounted(async () => {
     fetchLibraryCount(),
     fetchWishlistCount(),
     fetchCouponCount(),
-    fetchAchievementStats()
+    fetchAchievementStats(),
+    fetchRefundCount()
   ])
 })
 
@@ -239,6 +248,15 @@ async function fetchAchievementStats() {
   }
 }
 
+async function fetchRefundCount() {
+  try {
+    const res = await refundApi.getMyRefunds()
+    refundCount.value = res.data.data?.length || 0
+  } catch (error) {
+    refundCount.value = 0
+  }
+}
+
 function goToLibrary() {
   router.push('/library')
 }
@@ -253,6 +271,10 @@ function goToWishlist() {
 
 function goToCoupons() {
   router.push('/coupons')
+}
+
+function goToRefunds() {
+  router.push('/refunds')
 }
 
 function goToAchievements() {
@@ -374,7 +396,7 @@ async function handleRecharge() {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 

@@ -55,4 +55,7 @@ public interface UserLibraryMapper {
 
     @Select("SELECT COALESCE(SUM(play_time), 0) FROM user_library WHERE user_id = #{userId}")
     Integer getTotalPlaytimeByUserId(Long userId);
+
+    @Delete("DELETE FROM user_library WHERE user_id = #{userId} AND game_id = #{gameId}")
+    int deleteByUserIdAndGameId(@Param("userId") Long userId, @Param("gameId") Long gameId);
 }

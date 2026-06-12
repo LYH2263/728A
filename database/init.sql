@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
     `discount_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '总优惠金额(折扣+优惠券)',
     `coupon_discount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '优惠券抵扣金额',
     `pay_amount` DECIMAL(10,2) NOT NULL COMMENT '实付金额',
-    `status` ENUM('PENDING', 'PAID', 'CANCELLED', 'COMPLETED') DEFAULT 'PENDING' COMMENT '订单状态',
+    `status` ENUM('PENDING', 'PAID', 'CANCELLED', 'COMPLETED', 'PARTIAL_REFUND', 'FULL_REFUND') DEFAULT 'PENDING' COMMENT '订单状态',
     `pay_time` DATETIME COMMENT '支付时间',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -188,6 +188,38 @@ CREATE TABLE IF NOT EXISTS `user_library` (
     FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`),
     UNIQUE KEY `uk_user_game_lib` (`user_id`, `game_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户游戏库';
+
+-- 退款申请表
+CREATE TABLE IF NOT EXISTS `refund_requests` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `refund_no` VARCHAR(50) NOT NULL UNIQUE COMMENT '退款单号',
+    `order_id` BIGINT NOT NULL COMMENT '关联订单ID',
+    `order_no` VARCHAR(50) NOT NULL COMMENT '订单号(冗余)',
+    `user_id` BIGINT NOT NULL COMMENT '申请人用户ID',
+    `game_id` BIGINT NOT NULL COMMENT '申请退款的游戏ID',
+    `game_title` VARCHAR(200) NOT NULL COMMENT '游戏名称(冗余)',
+    `game_cover` VARCHAR(500) COMMENT '游戏封面(冗余)',
+    `order_item_id` BIGINT NOT NULL COMMENT '订单项ID',
+    `order_item_price` DECIMAL(10,2) NOT NULL COMMENT '订单项成交价格',
+    `reason` VARCHAR(500) NOT NULL COMMENT '退款原因',
+    `status` ENUM('PENDING', 'APPROVED', 'REJECTED', 'REFUNDED') DEFAULT 'PENDING' COMMENT '状态: PENDING待审核, APPROVED已通过, REJECTED已拒绝, REFUNDED已退款',
+    `review_user_id` BIGINT COMMENT '审核人ID',
+    `review_remark` VARCHAR(500) COMMENT '审核备注',
+    `reviewed_at` DATETIME COMMENT '审核时间',
+    `refunded_at` DATETIME COMMENT '退款到账时间',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`game_id`) REFERENCES `games`(`id`),
+    FOREIGN KEY (`order_item_id`) REFERENCES `order_items`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`review_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+    INDEX `idx_refund_no` (`refund_no`),
+    INDEX `idx_order_id` (`order_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='退款申请表';
 
 -- 游戏评论表
 CREATE TABLE IF NOT EXISTS `game_reviews` (

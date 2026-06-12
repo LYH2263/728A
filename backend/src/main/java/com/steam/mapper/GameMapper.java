@@ -52,4 +52,10 @@ public interface GameMapper {
     
     @Update("UPDATE games SET rating = #{rating}, rating_count = #{ratingCount} WHERE id = #{id}")
     int updateRating(@Param("id") Long id, @Param("rating") java.math.BigDecimal rating, @Param("ratingCount") Integer ratingCount);
+
+    @Update("UPDATE games SET stock = stock + 1, sales_count = GREATEST(sales_count - 1, 0) WHERE id = #{id}")
+    int increaseStock(Long id);
+
+    @Select("SELECT * FROM games WHERE id = #{id}")
+    Game findByIdIgnoreStatus(Long id);
 }

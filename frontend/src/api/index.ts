@@ -157,3 +157,17 @@ export const libraryExtApi = {
   updatePlayTime: (gameId: number, minutes: number) =>
     api.post(`/library/${gameId}/playtime`, { minutes })
 }
+
+// 退款相关
+export const refundApi = {
+  applyRefund: (data: { orderItemId: number; reason: string }) =>
+    api.post('/refunds/apply', data),
+  checkEligibility: (orderItemId: number) =>
+    api.get(`/refunds/check/${orderItemId}`),
+  getMyRefunds: () => api.get('/refunds/my'),
+  getRefundDetail: (id: number) => api.get(`/refunds/${id}`),
+  getAllRefunds: (status?: string) =>
+    api.get('/refunds/admin/list', { params: status ? { status } : {} }),
+  reviewRefund: (data: { refundId: number; action: string; remark?: string }) =>
+    api.post('/refunds/admin/review', data)
+}

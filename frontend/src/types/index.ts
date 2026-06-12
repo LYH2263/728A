@@ -92,7 +92,7 @@ export interface Order {
   totalAmount: number
   payAmount: number
   discountAmount?: number
-  status: 'PENDING' | 'PAID' | 'CANCELLED' | 'COMPLETED'
+  status: 'PENDING' | 'PAID' | 'CANCELLED' | 'COMPLETED' | 'PARTIAL_REFUND' | 'FULL_REFUND'
   payTime?: string
   createdAt: string
   orderItems?: OrderItem[]
@@ -107,6 +107,7 @@ export interface OrderItem {
   gameCover?: string
   price: number
   quantity: number
+  refundable?: boolean
 }
 
 // 用户游戏库
@@ -188,11 +189,36 @@ export interface Order {
   payAmount: number
   discountAmount?: number
   couponDiscount?: number
-  status: 'PENDING' | 'PAID' | 'CANCELLED' | 'COMPLETED'
+  status: 'PENDING' | 'PAID' | 'CANCELLED' | 'COMPLETED' | 'PARTIAL_REFUND' | 'FULL_REFUND'
   payTime?: string
   createdAt: string
   orderItems?: OrderItem[]
   userCoupon?: UserCoupon
+}
+
+// 退款申请
+export interface RefundRequest {
+  id: number
+  refundNo: string
+  orderId: number
+  orderNo: string
+  userId: number
+  gameId: number
+  gameTitle: string
+  gameCover?: string
+  orderItemId: number
+  orderItemPrice: number
+  reason: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED'
+  reviewUserId?: number
+  reviewRemark?: string
+  reviewedAt?: string
+  refundedAt?: string
+  createdAt: string
+  updatedAt?: string
+  user?: User
+  reviewUser?: User
+  order?: Order
 }
 
 // 成就定义

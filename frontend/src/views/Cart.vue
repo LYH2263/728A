@@ -4,19 +4,18 @@
       <el-icon><ShoppingCart /></el-icon>
       我的购物车
     </h1>
-    
+
     <div v-if="loading" class="loading">
       <el-skeleton :rows="5" animated />
     </div>
-    
+
     <template v-else>
       <div v-if="cartStore.items.length" class="cart-content">
-        <!-- 购物车列表 -->
         <div class="cart-list">
           <div v-for="item in cartStore.items" :key="item.id" class="cart-item">
-            <img 
-              :src="item.game.coverImage" 
-              :alt="item.game.title" 
+            <img
+              :src="item.game.coverImage"
+              :alt="item.game.title"
               class="game-cover"
               @click="goToGame(item.gameId)"
             />
@@ -39,24 +38,70 @@
             </el-button>
           </div>
         </div>
-        
-        <!-- 结算信息 -->
+
         <div class="checkout-card">
           <h3>订单摘要</h3>
+
+          <div class="coupon-section">
+            <div class="coupon-label">
+              <span>优惠券</span>
+              <span v-if="applicableCoupons.length" class="coupon-count">
+                可用 {{ applicableCoupons.length }} 张
+              </span>
+            </div>
+            <el-select
+              v-model="selectedCouponId"
+              placeholder="请选择优惠券"
+              style="width: 100%"
+              class="coupon-select"
+              @change="onCouponChange"
+            >
+              <el-option :value="null" label="不使用优惠券" />
+              <el-option
+                v-for="uc in applicableCoupons"
+                :key="uc.id"
+                :value="uc.id"
+                :label="getCouponLabel(uc)"
+              >
+                <div class="coupon-option">
+                  <span class="coupon-option-name">{{ uc.coupon?.name }}</span>
+                  <span class="coupon-option-desc">
+                    {{ getCouponValueText(uc.coupon!) }}
+                  </span>
+                </div>
+              </el-option>
+            </el-select>
+            <div v-if="couponDiscount > 0" class="coupon-discount">
+              已优惠：-¥{{ couponDiscount.toFixed(2) }}
+            </div>
+          </div>
+
+          <el-divider />
+
           <div class="summary-row">
             <span>商品总价</span>
             <span>¥{{ cartStore.originalAmount.toFixed(2) }}</span>
           </div>
           <div v-if="cartStore.discountAmount > 0" class="summary-row discount">
-            <span>优惠</span>
+            <span>商品折扣</span>
             <span>-¥{{ cartStore.discountAmount.toFixed(2) }}</span>
+          </div>
+          <div v-if="couponDiscount > 0" class="summary-row coupon-row">
+            <span>优惠券抵扣</span>
+            <span>-¥{{ couponDiscount.toFixed(2) }}</span>
           </div>
           <el-divider />
           <div class="summary-row total">
             <span>应付金额</span>
-            <span>¥{{ cartStore.totalAmount.toFixed(2) }}</span>
+            <span class="pay-amount">¥{{ finalAmount.toFixed(2) }}</span>
           </div>
-          <el-button type="success" size="large" style="width: 100%" @click="handleCheckout">
+          <el-button
+            type="success"
+            size="large"
+            style="width: 100%"
+            @click="handleCheckout"
+            :disabled="!cartStore.items.length"
+          >
             结算 ({{ cartStore.count }}件商品)
           </el-button>
           <el-button text style="width: 100%; margin-left:0; margin-top: 8px" @click="handleClear">
@@ -64,16 +109,15 @@
           </el-button>
         </div>
       </div>
-      
+
       <el-empty v-else description="购物车是空的">
         <router-link to="/store">
           <el-button type="primary">去选购</el-button>
         </router-link>
       </el-empty>
     </template>
-    
-    <!-- 结算对话框 -->
-    <el-dialog v-model="showCheckout" title="确认订单" width="500px">
+
+    <el-dialog v-model="showCheckout" title="确认订单" width="500px" class="checkout-dialog-wrapper">
       <div class="checkout-dialog">
         <div class="order-items">
           <div v-for="item in cartStore.items" :key="item.id" class="order-item">
@@ -82,20 +126,27 @@
             <span class="price">¥{{ (item.game.discountPrice ?? item.game.originalPrice).toFixed(2) }}</span>
           </div>
         </div>
+
+        <div v-if="selectedCoupon" class="coupon-info">
+          <el-tag type="success" size="small">优惠券</el-tag>
+          <span class="coupon-name">{{ selectedCoupon.coupon?.name }}</span>
+          <span class="coupon-save">-¥{{ couponDiscount.toFixed(2) }}</span>
+        </div>
+
         <el-divider />
         <div class="order-total">
           <span>应付金额：</span>
-          <span class="amount">¥{{ cartStore.totalAmount.toFixed(2) }}</span>
+          <span class="amount">¥{{ finalAmount.toFixed(2) }}</span>
         </div>
         <div class="balance-info">
           <span>账户余额：</span>
-          <span :class="{ insufficient: userBalance < cartStore.totalAmount }">
+          <span :class="{ insufficient: userBalance < finalAmount }">
             ¥{{ userBalance.toFixed(2) }}
           </span>
         </div>
-        <el-alert 
-          v-if="userBalance < cartStore.totalAmount" 
-          type="warning" 
+        <el-alert
+          v-if="userBalance < finalAmount"
+          type="warning"
           :closable="false"
           style="margin-top: 16px"
         >
@@ -104,9 +155,9 @@
       </div>
       <template #footer>
         <el-button @click="showCheckout = false">取消</el-button>
-        <el-button 
-          v-if="userBalance >= cartStore.totalAmount"
-          type="primary" 
+        <el-button
+          v-if="userBalance >= finalAmount"
+          type="primary"
           :loading="checkoutLoading"
           @click="confirmCheckout"
         >
@@ -119,11 +170,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/store/cart'
 import { useUserStore } from '@/store/user'
-import { orderApi } from '@/api'
+import { orderApi, couponApi } from '@/api'
+import type { UserCoupon } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
@@ -133,13 +185,125 @@ const userStore = useUserStore()
 const loading = ref(true)
 const showCheckout = ref(false)
 const checkoutLoading = ref(false)
+const applicableCoupons = ref<UserCoupon[]>([])
+const selectedCouponId = ref<number | null>(null)
+const couponDiscount = ref(0)
 
 const userBalance = computed(() => userStore.userInfo?.balance || 0)
 
+const selectedCoupon = computed(() => {
+  if (!selectedCouponId.value) return null
+  return applicableCoupons.value.find(uc => uc.id === selectedCouponId.value) || null
+})
+
+const finalAmount = computed(() => {
+  return Math.max(0, cartStore.totalAmount - couponDiscount.value)
+})
+
 onMounted(async () => {
   await cartStore.fetchCart()
+  await loadApplicableCoupons()
   loading.value = false
 })
+
+watch(
+  () => cartStore.items.length,
+  () => {
+    if (cartStore.items.length > 0) {
+      loadApplicableCoupons()
+    } else {
+      applicableCoupons.value = []
+      selectedCouponId.value = null
+      couponDiscount.value = 0
+    }
+  }
+)
+
+async function loadApplicableCoupons() {
+  if (cartStore.items.length === 0) {
+    applicableCoupons.value = []
+    return
+  }
+  try {
+    const gameIds = cartStore.items.map(item => item.gameId)
+    const res = await couponApi.getApplicableCoupons(gameIds)
+    applicableCoupons.value = res.data.data || []
+
+    if (applicableCoupons.value.length > 0 && !selectedCouponId.value) {
+      const best = applicableCoupons.value[0]
+      selectedCouponId.value = best.id
+      calculateCouponDiscount(best)
+    } else if (selectedCouponId.value) {
+      const current = applicableCoupons.value.find(uc => uc.id === selectedCouponId.value)
+      if (current) {
+        calculateCouponDiscount(current)
+      } else {
+        selectedCouponId.value = null
+        couponDiscount.value = 0
+      }
+    }
+  } catch (error) {
+    applicableCoupons.value = []
+  }
+}
+
+function calculateCouponDiscount(userCoupon: UserCoupon) {
+  const coupon = userCoupon.coupon
+  if (!coupon) {
+    couponDiscount.value = 0
+    return
+  }
+
+  const totalPrice = cartStore.totalAmount
+
+  if (coupon.type === 'FULL_REDUCTION') {
+    if (totalPrice >= coupon.minAmount) {
+      couponDiscount.value = coupon.value
+    } else {
+      couponDiscount.value = 0
+    }
+  } else if (coupon.type === 'DISCOUNT') {
+    if (totalPrice >= coupon.minAmount) {
+      couponDiscount.value = Math.round((totalPrice * (1 - coupon.value / 100)) * 100) / 100
+    } else {
+      couponDiscount.value = 0
+    }
+  } else if (coupon.type === 'CATEGORY') {
+    couponDiscount.value = 0
+  }
+}
+
+function onCouponChange() {
+  if (selectedCouponId.value) {
+    const uc = applicableCoupons.value.find(c => c.id === selectedCouponId.value)
+    if (uc) {
+      calculateCouponDiscount(uc)
+    }
+  } else {
+    couponDiscount.value = 0
+  }
+}
+
+function getCouponLabel(uc: UserCoupon): string {
+  const coupon = uc.coupon
+  if (!coupon) return ''
+  return `${coupon.name} - ${getCouponValueText(coupon)}`
+}
+
+function getCouponValueText(coupon: any): string {
+  if (coupon.type === 'FULL_REDUCTION') {
+    return `满${coupon.minAmount}减${coupon.value}`
+  } else if (coupon.type === 'DISCOUNT') {
+    return `${coupon.value / 10}折优惠`
+  } else if (coupon.type === 'CATEGORY') {
+    if (coupon.value > 50) {
+      return `指定分类${coupon.value / 10}折`
+    } else {
+      return `指定分类减${coupon.value}`
+    }
+  }
+  return ''
+}
 
 function goToGame(gameId: number) {
   router.push(`/game/${gameId}`)
@@ -170,22 +334,26 @@ async function confirmCheckout() {
   checkoutLoading.value = true
   try {
     const gameIds = cartStore.items.map(item => item.gameId)
-    const res = await orderApi.createOrder(gameIds)
+    const res = await orderApi.createOrder({
+      gameIds,
+      userCouponId: selectedCouponId.value || undefined
+    })
     const order = res.data.data
-    
-    // 支付订单
-    await orderApi.payOrder(order.orderNo)
-    
+
+    const payRes = await orderApi.payOrder(order.orderNo)
+
     ElMessage.success('支付成功！游戏已添加到您的游戏库')
     showCheckout.value = false
-    
-    // 刷新数据
+
     await Promise.all([
       cartStore.fetchCart(),
-      userStore.fetchUserInfo()
+      userStore.fetchUserInfo(),
+      loadApplicableCoupons()
     ])
-    
-    // 跳转到游戏库
+
+    selectedCouponId.value = null
+    couponDiscount.value = 0
+
     router.push('/library')
   } catch (error) {
     // 错误已处理
@@ -235,7 +403,7 @@ function goToRecharge() {
   background: var(--bg-card);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
-  
+
   .game-cover {
     width: 120px;
     height: 56px;
@@ -243,32 +411,32 @@ function goToRecharge() {
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: opacity 0.3s;
-    
+
     &:hover {
       opacity: 0.8;
     }
   }
-  
+
   .item-info {
     flex: 1;
-    
+
     h3 {
       font-size: 16px;
       color: var(--text-white);
       margin-bottom: 8px;
       cursor: pointer;
-      
+
       &:hover {
         color: var(--steam-light-blue);
       }
     }
   }
-  
+
   .item-price {
     display: flex;
     align-items: center;
     gap: 8px;
-    
+
     .discount-tag {
       background: var(--steam-green);
       color: var(--steam-darker);
@@ -277,13 +445,13 @@ function goToRecharge() {
       font-weight: 600;
       font-size: 12px;
     }
-    
+
     .original-price {
       color: var(--text-secondary);
       text-decoration: line-through;
       font-size: 14px;
     }
-    
+
     .final-price {
       color: var(--text-primary);
       font-weight: 600;
@@ -299,78 +467,161 @@ function goToRecharge() {
   height: fit-content;
   position: sticky;
   top: 84px;
-  
+
   h3 {
     font-size: 18px;
     color: var(--text-white);
     margin-bottom: 16px;
   }
-  
+
   .summary-row {
     display: flex;
     justify-content: space-between;
     margin-bottom: 12px;
     color: var(--text-primary);
-    
+
     &.discount {
       color: var(--steam-green);
     }
-    
+
+    &.coupon-row {
+      color: var(--steam-light-blue);
+    }
+
     &.total {
       font-size: 18px;
       font-weight: 600;
+      color: var(--text-white);
+
+      .pay-amount {
+        color: var(--steam-green);
+        font-size: 22px;
+      }
+    }
+  }
+}
+
+.coupon-section {
+  margin-bottom: 8px;
+
+  .coupon-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+
+    .coupon-count {
+      color: var(--steam-green);
+      font-size: 12px;
+    }
+  }
+
+  .coupon-select {
+    :deep(.el-select__wrapper) {
+      background: rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .coupon-discount {
+    margin-top: 8px;
+    color: var(--steam-green);
+    font-size: 13px;
+    text-align: right;
+  }
+}
+
+.coupon-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+
+  .coupon-option-name {
+    color: var(--text-white);
+  }
+
+  .coupon-option-desc {
+    color: var(--steam-green);
+    font-size: 12px;
+  }
+}
+
+// 结算对话框
+:deep(.checkout-dialog-wrapper) {
+  .el-dialog {
+    background: var(--bg-card);
+
+    .el-dialog__title {
       color: var(--text-white);
     }
   }
 }
 
-// 结算对话框
 .checkout-dialog {
   .order-items {
     max-height: 300px;
     overflow-y: auto;
   }
-  
+
   .order-item {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 8px 0;
-    
+
     img {
       width: 60px;
       height: 28px;
       object-fit: cover;
       border-radius: var(--radius-sm);
     }
-    
+
     span:first-of-type {
       flex: 1;
       color: var(--text-primary);
     }
-    
+
     .price {
       color: var(--text-white);
       font-weight: 500;
     }
   }
-  
+
+  .coupon-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    margin-top: 8px;
+
+    .coupon-name {
+      flex: 1;
+      color: var(--text-primary);
+    }
+
+    .coupon-save {
+      color: var(--steam-green);
+      font-weight: 600;
+    }
+  }
+
   .order-total, .balance-info {
     display: flex;
     justify-content: space-between;
     margin-bottom: 8px;
-    
+
     span:first-child {
       color: var(--text-secondary);
     }
   }
-  
+
   .order-total .amount {
     font-size: 20px;
     font-weight: 600;
     color: var(--steam-green);
   }
-  
+
   .insufficient {
     color: var(--el-color-danger);
   }
@@ -380,14 +631,14 @@ function goToRecharge() {
   .cart-content {
     grid-template-columns: 1fr;
   }
-  
+
   .checkout-card {
     position: static;
   }
-  
+
   .cart-item {
     flex-wrap: wrap;
-    
+
     .game-cover {
       width: 80px;
       height: 37px;

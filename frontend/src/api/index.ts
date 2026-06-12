@@ -113,11 +113,20 @@ export const wishlistApi = {
 
 // 订单相关
 export const orderApi = {
-  createOrder: (gameIds: number[]) => api.post('/orders', { gameIds }),
+  createOrder: (data: { gameIds: number[]; userCouponId?: number }) => api.post('/orders', data),
   payOrder: (orderNo: string) => api.post(`/orders/${orderNo}/pay`),
   cancelOrder: (orderNo: string) => api.post(`/orders/${orderNo}/cancel`),
   getOrders: () => api.get('/orders'),
   getOrderDetail: (orderNo: string) => api.get(`/orders/${orderNo}`)
+}
+
+// 优惠券相关
+export const couponApi = {
+  claimCoupon: (code: string) => api.post('/coupons/claim', { code }),
+  getMyCoupons: (status?: string) => api.get('/coupons/my', { params: { status } }),
+  getAvailableCoupons: () => api.get('/coupons/available'),
+  getApplicableCoupons: (gameIds: number[]) => api.post('/coupons/applicable', { gameIds }),
+  getCouponByCode: (code: string) => api.get(`/coupons/${code}`)
 }
 
 // 游戏库相关

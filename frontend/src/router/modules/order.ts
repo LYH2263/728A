@@ -12,6 +12,12 @@ const orderRoutes: RouteRecordRaw[] = [
     name: 'Orders',
     component: () => import('@/views/Orders.vue'),
     meta: { title: '我的订单', requiresAuth: true }
+  },
+  {
+    path: '/coupons',
+    name: 'Coupons',
+    component: () => import('@/views/Coupons.vue'),
+    meta: { title: '我的优惠券', requiresAuth: true }
   }
 ]
 

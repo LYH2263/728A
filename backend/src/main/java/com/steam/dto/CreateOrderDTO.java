@@ -11,4 +11,5 @@ import java.util.List;
 public class CreateOrderDTO {
     @NotEmpty(message = "购买的游戏不能为空")
     private List<Long> gameIds;
+    private Long userCouponId;
 }

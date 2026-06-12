@@ -13,14 +13,16 @@ public class Order {
     private Long id;
     private String orderNo;
     private Long userId;
+    private Long userCouponId;
     private BigDecimal totalAmount;
-    private BigDecimal payAmount;
     private BigDecimal discountAmount;
-    private String status;  // PENDING, PAID, CANCELLED, COMPLETED
+    private BigDecimal couponDiscount;
+    private BigDecimal payAmount;
+    private String status;
     private LocalDateTime payTime;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
-    // 关联字段（非数据库字段）
     private List<OrderItem> orderItems;
+    private UserCoupon userCoupon;
 }

@@ -50,25 +50,32 @@
       
       <!-- 统计卡片 -->
       <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card" @click="goToLibrary">
           <el-icon :size="32" color="var(--steam-light-blue)"><Collection /></el-icon>
           <div class="stat-info">
             <span class="stat-value">{{ libraryCount }}</span>
             <span class="stat-label">已拥有游戏</span>
           </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" @click="goToCart">
           <el-icon :size="32" color="var(--steam-green)"><ShoppingCart /></el-icon>
           <div class="stat-info">
             <span class="stat-value">{{ cartCount }}</span>
             <span class="stat-label">购物车</span>
           </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" @click="goToWishlist">
           <el-icon :size="32" color="#ffd700"><Star /></el-icon>
           <div class="stat-info">
             <span class="stat-value">{{ wishlistCount }}</span>
             <span class="stat-label">愿望单</span>
+          </div>
+        </div>
+        <div class="stat-card" @click="goToCoupons">
+          <el-icon :size="32" color="#ff6b6b"><Ticket /></el-icon>
+          <div class="stat-info">
+            <span class="stat-value">{{ couponCount }}</span>
+            <span class="stat-label">优惠券</span>
           </div>
         </div>
       </div>
@@ -127,11 +134,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useCartStore } from '@/store/cart'
-import { libraryApi, wishlistApi } from '@/api'
+import { libraryApi, wishlistApi, couponApi } from '@/api'
 import { ElMessage } from 'element-plus'
 
+const router = useRouter()
 const userStore = useUserStore()
 const cartStore = useCartStore()
 
@@ -147,6 +156,7 @@ function getAvatarUrl(avatar: string | undefined): string {
 
 const libraryCount = ref(0)
 const wishlistCount = ref(0)
+const couponCount = ref(0)
 const cartCount = computed(() => cartStore.count)
 
 const showEditDialog = ref(false)
@@ -173,7 +183,8 @@ onMounted(async () => {
   
   await Promise.all([
     fetchLibraryCount(),
-    fetchWishlistCount()
+    fetchWishlistCount(),
+    fetchCouponCount()
   ])
 })
 
@@ -193,6 +204,31 @@ async function fetchWishlistCount() {
   } catch (error) {
     wishlistCount.value = 0
   }
+}
+
+async function fetchCouponCount() {
+  try {
+    const res = await couponApi.getAvailableCoupons()
+    couponCount.value = res.data.data?.length || 0
+  } catch (error) {
+    couponCount.value = 0
+  }
+}
+
+function goToLibrary() {
+  router.push('/library')
+}
+
+function goToCart() {
+  router.push('/cart')
+}
+
+function goToWishlist() {
+  router.push('/wishlist')
+}
+
+function goToCoupons() {
+  router.push('/coupons')
 }
 
 async function handleSaveProfile() {
@@ -310,7 +346,7 @@ async function handleRecharge() {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
 
@@ -322,6 +358,13 @@ async function handleRecharge() {
   align-items: center;
   gap: 16px;
   border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--steam-light-blue);
+  }
   
   .stat-info {
     display: flex;
@@ -375,7 +418,7 @@ async function handleRecharge() {
   }
   
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
   
   .avatar-section {

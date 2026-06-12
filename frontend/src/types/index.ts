@@ -146,3 +146,51 @@ export interface GameQueryParams {
   onSale?: boolean
   featured?: boolean
 }
+
+// 优惠券
+export interface Coupon {
+  id: number
+  name: string
+  code: string
+  type: 'FULL_REDUCTION' | 'DISCOUNT' | 'CATEGORY'
+  value: number
+  minAmount: number
+  categoryId?: number
+  totalCount: number
+  claimedCount: number
+  perUserLimit: number
+  validStart: string
+  validEnd: string
+  description?: string
+  status: number
+  createdAt: string
+}
+
+// 用户优惠券
+export interface UserCoupon {
+  id: number
+  userId: number
+  couponId: number
+  orderId?: number
+  status: 'UNUSED' | 'USED' | 'EXPIRED'
+  usedAt?: string
+  createdAt: string
+  coupon?: Coupon
+}
+
+// 订单
+export interface Order {
+  id: number
+  orderNo: string
+  userId: number
+  userCouponId?: number
+  totalAmount: number
+  payAmount: number
+  discountAmount?: number
+  couponDiscount?: number
+  status: 'PENDING' | 'PAID' | 'CANCELLED' | 'COMPLETED'
+  payTime?: string
+  createdAt: string
+  orderItems?: OrderItem[]
+  userCoupon?: UserCoupon
+}

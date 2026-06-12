@@ -96,22 +96,68 @@ CREATE TABLE IF NOT EXISTS `wishlist` (
     UNIQUE KEY `uk_user_game_wish` (`user_id`, `game_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='愿望单表';
 
+-- 优惠券表
+CREATE TABLE IF NOT EXISTS `coupons` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL COMMENT '优惠券名称',
+    `code` VARCHAR(50) NOT NULL UNIQUE COMMENT '券码',
+    `type` ENUM('FULL_REDUCTION', 'DISCOUNT', 'CATEGORY') NOT NULL COMMENT '类型: FULL_REDUCTION满减, DISCOUNT折扣, CATEGORY分类券',
+    `value` DECIMAL(10,2) NOT NULL COMMENT '面值: 满减为金额, 折扣为百分比(0-100)',
+    `min_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '最低消费门槛',
+    `category_id` BIGINT COMMENT '指定分类ID(仅分类券有效)',
+    `total_count` INT DEFAULT -1 COMMENT '领取上限, -1为无限制',
+    `claimed_count` INT DEFAULT 0 COMMENT '已领取数量',
+    `per_user_limit` INT DEFAULT 1 COMMENT '每人限领数',
+    `valid_start` DATETIME NOT NULL COMMENT '有效期开始',
+    `valid_end` DATETIME NOT NULL COMMENT '有效期结束',
+    `description` VARCHAR(200) COMMENT '描述',
+    `status` TINYINT DEFAULT 1 COMMENT '状态: 0禁用 1启用',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_code` (`code`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='优惠券表';
+
+-- 用户优惠券领取记录表
+CREATE TABLE IF NOT EXISTS `user_coupons` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL,
+    `coupon_id` BIGINT NOT NULL,
+    `order_id` BIGINT COMMENT '使用的订单ID',
+    `status` ENUM('UNUSED', 'USED', 'EXPIRED') DEFAULT 'UNUSED' COMMENT '状态: UNUSED未使用, USED已使用, EXPIRED已过期',
+    `used_at` DATETIME COMMENT '使用时间',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`coupon_id`) REFERENCES `coupons`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE SET NULL,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_coupon_id` (`coupon_id`),
+    INDEX `idx_user_coupon` (`user_id`, `coupon_id`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户优惠券记录表';
+
 -- 订单表
 CREATE TABLE IF NOT EXISTS `orders` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
     `order_no` VARCHAR(50) NOT NULL UNIQUE COMMENT '订单号',
     `user_id` BIGINT NOT NULL,
-    `total_amount` DECIMAL(10,2) NOT NULL COMMENT '订单总金额',
+    `user_coupon_id` BIGINT COMMENT '使用的用户优惠券ID',
+    `total_amount` DECIMAL(10,2) NOT NULL COMMENT '订单总金额(商品原价合计)',
+    `discount_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '总优惠金额(折扣+优惠券)',
+    `coupon_discount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '优惠券抵扣金额',
     `pay_amount` DECIMAL(10,2) NOT NULL COMMENT '实付金额',
-    `discount_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '优惠金额',
     `status` ENUM('PENDING', 'PAID', 'CANCELLED', 'COMPLETED') DEFAULT 'PENDING' COMMENT '订单状态',
     `pay_time` DATETIME COMMENT '支付时间',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`),
+    FOREIGN KEY (`user_coupon_id`) REFERENCES `user_coupons`(`id`) ON DELETE SET NULL,
     INDEX `idx_order_no` (`order_no`),
     INDEX `idx_user_id` (`user_id`),
-    INDEX `idx_status` (`status`)
+    INDEX `idx_status` (`status`),
+    INDEX `idx_user_coupon_id` (`user_coupon_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单表';
 
 -- 订单明细表
@@ -329,3 +375,19 @@ INSERT INTO `order_items` (`order_id`, `game_id`, `game_title`, `game_cover`, `p
 INSERT INTO `user_library` (`user_id`, `game_id`, `order_id`, `play_time`, `last_played_at`) VALUES
 (2, 1, 1, 1250, '2024-01-28 22:15:00'),
 (2, 5, 2, 3680, '2024-01-29 23:45:00');
+
+-- 插入演示优惠券
+INSERT INTO `coupons` (`name`, `code`, `type`, `value`, `min_amount`, `category_id`, `total_count`, `claimed_count`, `per_user_limit`, `valid_start`, `valid_end`, `description`) VALUES
+('新人满减券', 'NEW50', 'FULL_REDUCTION', 50.00, 100.00, NULL, 1000, 0, 1, '2024-01-01 00:00:00', '2026-12-31 23:59:59', '新用户专享满100减50'),
+('全场9折券', 'SAVE10', 'DISCOUNT', 90.00, 0.00, NULL, -1, 0, 3, '2024-01-01 00:00:00', '2026-12-31 23:59:59', '全场通用9折，最多可省100元'),
+('RPG游戏专享券', 'RPG20', 'CATEGORY', 20.00, 99.00, 2, 500, 0, 2, '2024-01-01 00:00:00', '2026-12-31 23:59:59', '角色扮演类游戏满99减20'),
+('大额满减券', 'BIG100', 'FULL_REDUCTION', 100.00, 299.00, NULL, 200, 0, 1, '2024-01-01 00:00:00', '2026-12-31 23:59:59', '全场满299减100'),
+('动作游戏85折', 'ACTION15', 'CATEGORY', 85.00, 50.00, 1, 300, 0, 1, '2024-01-01 00:00:00', '2026-12-31 23:59:59', '动作游戏85折优惠');
+
+-- 给测试用户发放一些优惠券
+INSERT INTO `user_coupons` (`user_id`, `coupon_id`, `status`) VALUES
+(2, 1, 'UNUSED'),
+(2, 2, 'UNUSED'),
+(2, 3, 'UNUSED'),
+(3, 2, 'UNUSED'),
+(3, 4, 'UNUSED');

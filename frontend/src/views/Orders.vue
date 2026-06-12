@@ -32,6 +32,10 @@
           
           <div class="order-footer">
             <div class="order-total">
+              <span v-if="order.couponDiscount && order.couponDiscount > 0" class="coupon-discount">
+                <el-tag type="success" size="small">优惠券</el-tag>
+                {{ order.userCoupon?.coupon?.name }} -¥{{ order.couponDiscount.toFixed(2) }}
+              </span>
               <span v-if="order.discountAmount && order.discountAmount > 0" class="discount">
                 已优惠 ¥{{ order.discountAmount.toFixed(2) }}
               </span>
@@ -258,7 +262,15 @@ async function handleCancel(orderNo: string) {
   .order-total {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+    
+    .coupon-discount {
+      color: var(--steam-light-blue);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
     
     .discount {
       color: var(--steam-green);

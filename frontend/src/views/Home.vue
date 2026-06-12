@@ -108,6 +108,19 @@
         </router-link>
       </div>
     </section>
+
+    <!-- 好友动态 -->
+    <section class="activity-section" v-if="isLoggedIn">
+      <div class="section-header">
+        <h2 class="section-title">好友动态</h2>
+        <router-link to="/friends" class="view-more">
+          好友列表 <el-icon><ArrowRight /></el-icon>
+        </router-link>
+      </div>
+      <div class="activity-timeline-wrapper">
+        <ActivityTimeline mode="friends" :empty-text="'暂无好友动态，快去添加好友吧'" />
+      </div>
+    </section>
     
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-container">
@@ -117,14 +130,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { cachedCategoryApi, cachedGameApi } from '@/utils/cachedApi'
 import type { Game, Category } from '@/types'
 import GameCard from '@/components/GameCard.vue'
+import ActivityTimeline from '@/components/ActivityTimeline.vue'
+import { useUserStore } from '@/store/user'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const userStore = useUserStore()
+
+const isLoggedIn = computed(() => userStore.isLoggedIn)
 
 const loading = ref(true)
 const featuredGames = ref<Game[]>([])
@@ -408,6 +426,33 @@ function goToGame(id: number) {
 
 .loading-container {
   padding: 40px;
+}
+
+// 好友动态
+.activity-section {
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    
+    .view-more {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--steam-light-blue);
+      font-size: 14px;
+      
+      &:hover {
+        color: var(--text-white);
+      }
+    }
+  }
+}
+
+.activity-timeline-wrapper {
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 // 响应式

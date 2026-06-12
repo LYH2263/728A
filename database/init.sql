@@ -479,3 +479,60 @@ INSERT INTO `achievements` (`code`, `name`, `description`, `icon`, `category`, `
 ('VETERAN_PLAYER', '资深玩家', '累计游玩时长达到500小时', '🏆', 'PLAYTIME', 30000, 1, 4, 100, 'PLAYTIME_UPDATED', NULL, 8),
 ('COLLECTOR_20', '收藏家', '拥有20款不同游戏', '🎮', 'COLLECTION', 20, 1, 4, 80, 'LIBRARY_UPDATED', NULL, 9),
 ('FIRST_REVIEW', '初出茅庐', '发表第一条游戏评论', '✍️', 'REVIEW', 1, 0, 1, 10, 'REVIEW_CREATED', NULL, 10);
+
+-- ===================== 社交系统 =====================
+
+-- 好友关系表
+CREATE TABLE IF NOT EXISTS `friendships` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `friend_id` BIGINT NOT NULL COMMENT '好友ID',
+    `status` ENUM('PENDING', 'ACCEPTED', 'BLOCKED') NOT NULL DEFAULT 'PENDING' COMMENT '关系状态: PENDING待接受, ACCEPTED已接受, BLOCKED已拉黑',
+    `action_user_id` BIGINT NOT NULL COMMENT '最后操作人ID(发送请求/拉黑的人)',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`friend_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`action_user_id`) REFERENCES `users`(`id`),
+    UNIQUE KEY `uk_user_friend` (`user_id`, `friend_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_friend_id` (`friend_id`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='好友关系表';
+
+-- 好友动态表
+CREATE TABLE IF NOT EXISTS `activities` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `type` ENUM('PURCHASE', 'ACHIEVEMENT', 'REVIEW') NOT NULL COMMENT '动态类型: PURCHASE购买游戏, ACHIEVEMENT解锁成就, REVIEW发表评论',
+    `game_id` BIGINT COMMENT '关联游戏ID',
+    `game_title` VARCHAR(200) COMMENT '游戏名称(冗余)',
+    `game_cover` VARCHAR(500) COMMENT '游戏封面(冗余)',
+    `achievement_id` BIGINT COMMENT '关联成就ID',
+    `achievement_name` VARCHAR(100) COMMENT '成就名称(冗余)',
+    `review_id` BIGINT COMMENT '关联评论ID',
+    `review_rating` INT COMMENT '评论评分(冗余)',
+    `review_content` TEXT COMMENT '评论内容(冗余)',
+    `metadata` JSON COMMENT '额外元数据JSON',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`game_id`) REFERENCES `games`(`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`achievement_id`) REFERENCES `achievements`(`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`review_id`) REFERENCES `game_reviews`(`id`) ON DELETE SET NULL,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_user_created` (`user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='好友动态表';
+
+-- 添加一些示例好友关系
+INSERT INTO `friendships` (`user_id`, `friend_id`, `status`, `action_user_id`) VALUES
+(2, 3, 'ACCEPTED', 2),
+(3, 2, 'ACCEPTED', 2);
+
+-- 添加一些示例动态
+INSERT INTO `activities` (`user_id`, `type`, `game_id`, `game_title`, `game_cover`, `achievement_id`, `achievement_name`, `review_id`, `review_rating`, `review_content`) VALUES
+(2, 'PURCHASE', 1, '赛博朋克 2077', '/game-assets/cyberpunk-2077/cover.jpg', NULL, NULL, NULL, NULL, NULL),
+(2, 'REVIEW', 1, '赛博朋克 2077', '/game-assets/cyberpunk-2077/cover.jpg', NULL, NULL, 1, 5, '夜之城真的太美了！剧情和角色都非常出色，强烈推荐！'),
+(3, 'PURCHASE', 9, '黑神话：悟空', '/game-assets/black-myth-wukong/cover.jpg', NULL, NULL, NULL, NULL, NULL),
+(3, 'REVIEW', 9, '黑神话：悟空', '/game-assets/black-myth-wukong/cover.jpg', NULL, NULL, 6, 5, '天命人，踏上西行之路吧！');

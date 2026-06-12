@@ -19,6 +19,7 @@ public class AchievementService {
 
     private final AchievementMapper achievementMapper;
     private final AchievementEngine achievementEngine;
+    private final ActivityService activityService;
 
     public List<UserAchievement> getUserAchievements(Long userId) {
         List<Achievement> allAchievements = achievementMapper.findAllActive();
@@ -89,19 +90,42 @@ public class AchievementService {
         AchievementEvent libEvent = new AchievementEvent(AchievementEvent.LIBRARY_UPDATED, userId)
                 .put("orderId", orderId);
         unlocked.addAll(achievementEngine.processEvent(libEvent));
+
+        try {
+            activityService.createAchievementActivity(userId, unlocked);
+        } catch (Exception e) {
+            log.error("创建成就动态失败: userId={}", userId, e);
+        }
+
         return unlocked;
     }
 
     public List<UserAchievement> triggerReviewCreated(Long userId, Long reviewId) {
         AchievementEvent event = new AchievementEvent(AchievementEvent.REVIEW_CREATED, userId)
                 .put("reviewId", reviewId);
-        return achievementEngine.processEvent(event);
+        List<UserAchievement> unlocked = achievementEngine.processEvent(event);
+
+        try {
+            activityService.createAchievementActivity(userId, unlocked);
+        } catch (Exception e) {
+            log.error("创建成就动态失败: userId={}", userId, e);
+        }
+
+        return unlocked;
     }
 
     public List<UserAchievement> triggerPlaytimeUpdated(Long userId, Long gameId, Integer playTime) {
         AchievementEvent event = new AchievementEvent(AchievementEvent.PLAYTIME_UPDATED, userId)
                 .put("gameId", gameId)
                 .put("playTime", playTime);
-        return achievementEngine.processEvent(event);
+        List<UserAchievement> unlocked = achievementEngine.processEvent(event);
+
+        try {
+            activityService.createAchievementActivity(userId, unlocked);
+        } catch (Exception e) {
+            log.error("创建成就动态失败: userId={}", userId, e);
+        }
+
+        return unlocked;
     }
 }

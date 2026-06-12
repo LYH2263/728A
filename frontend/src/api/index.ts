@@ -171,3 +171,29 @@ export const refundApi = {
   reviewRefund: (data: { refundId: number; action: string; remark?: string }) =>
     api.post('/refunds/admin/review', data)
 }
+
+// 好友相关
+export const friendApi = {
+  getFriends: () => api.get('/friends/list'),
+  getPendingRequests: () => api.get('/friends/pending'),
+  getPendingCount: () => api.get('/friends/pending/count'),
+  getBlockedUsers: () => api.get('/friends/blocked'),
+  searchUsers: (keyword: string, page: number = 1, size: number = 10) =>
+    api.get('/friends/search', { params: { keyword, page, size } }),
+  sendRequest: (friendId: number) => api.post(`/friends/request/${friendId}`),
+  acceptRequest: (friendId: number) => api.post(`/friends/accept/${friendId}`),
+  rejectRequest: (friendId: number) => api.post(`/friends/reject/${friendId}`),
+  deleteFriend: (friendId: number) => api.delete(`/friends/${friendId}`),
+  blockUser: (friendId: number) => api.post(`/friends/block/${friendId}`),
+  unblockUser: (friendId: number) => api.post(`/friends/unblock/${friendId}`),
+  getFriendshipStatus: (targetUserId: number) =>
+    api.get(`/friends/status/${targetUserId}`)
+}
+
+// 动态相关
+export const activityApi = {
+  getFriendActivities: (page: number = 1, size: number = 10) =>
+    api.get('/activities/friends', { params: { page, size } }),
+  getMyActivities: (page: number = 1, size: number = 10) =>
+    api.get('/activities/mine', { params: { page, size } })
+}

@@ -259,3 +259,33 @@ export interface AchievementStats {
   totalPoints: number
   completionRate: number
 }
+
+// 好友关系
+export interface Friendship {
+  id: number
+  userId: number
+  friendId: number
+  status: 'PENDING' | 'ACCEPTED' | 'BLOCKED'
+  actionUserId: number
+  createdAt: string
+  updatedAt: string
+  friendUser?: User
+}
+
+// 好友动态
+export interface Activity {
+  id: number
+  userId: number
+  type: 'PURCHASE' | 'ACHIEVEMENT' | 'REVIEW'
+  gameId?: number
+  gameTitle?: string
+  gameCover?: string
+  achievementId?: number
+  achievementName?: string
+  reviewId?: number
+  reviewRating?: number
+  reviewContent?: string
+  metadata?: string
+  createdAt: string
+  user?: User
+}

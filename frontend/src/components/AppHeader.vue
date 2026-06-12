@@ -39,6 +39,13 @@
           <router-link to="/wishlist" class="icon-btn">
             <el-icon :size="22"><Star /></el-icon>
           </router-link>
+
+          <!-- 好友 -->
+          <router-link to="/friends" class="icon-btn">
+            <el-badge :value="pendingFriendCount" :hidden="pendingFriendCount === 0" :max="99">
+              <el-icon :size="22"><UserFilled /></el-icon>
+            </el-badge>
+          </router-link>
           
           <!-- 用户下拉菜单 -->
           <el-dropdown trigger="click" @command="handleCommand">
@@ -70,6 +77,10 @@
                 <el-dropdown-item command="wishlist">
                   <el-icon><Star /></el-icon>
                   愿望单
+                </el-dropdown-item>
+                <el-dropdown-item command="friends">
+                  <el-icon><UserFilled /></el-icon>
+                  好友
                 </el-dropdown-item>
                 <el-dropdown-item divided command="logout">
                   <el-icon><SwitchButton /></el-icon>
@@ -126,6 +137,10 @@
             <el-icon><Star /></el-icon>
             愿望单
           </router-link>
+          <router-link to="/friends" class="mobile-nav-item" @click="showMobileMenu = false">
+            <el-icon><UserFilled /></el-icon>
+            好友
+          </router-link>
           <router-link to="/orders" class="mobile-nav-item" @click="showMobileMenu = false">
             <el-icon><Document /></el-icon>
             我的订单
@@ -159,12 +174,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useCartStore } from '@/store/cart'
-import { Search } from '@element-plus/icons-vue'
+import { Search, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { friendApi } from '@/api'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -172,6 +188,7 @@ const cartStore = useCartStore()
 
 const searchKeyword = ref('')
 const showMobileMenu = ref(false)
+const pendingFriendCount = ref(0)
 
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const userInfo = computed(() => userStore.userInfo)
@@ -211,9 +228,22 @@ function handleCommand(command: string) {
     case 'wishlist':
       router.push('/wishlist')
       break
+    case 'friends':
+      router.push('/friends')
+      break
     case 'logout':
       handleLogout()
       break
+  }
+}
+
+async function loadPendingFriendCount() {
+  if (!userStore.isLoggedIn) return
+  try {
+    const res = await friendApi.getPendingCount()
+    pendingFriendCount.value = res.data.data
+  } catch (e) {
+    console.error('加载好友请求数量失败', e)
   }
 }
 
@@ -233,6 +263,20 @@ async function handleLogout() {
     // 取消
   }
 }
+
+watch(isLoggedIn, (loggedIn) => {
+  if (loggedIn) {
+    loadPendingFriendCount()
+  } else {
+    pendingFriendCount.value = 0
+  }
+})
+
+onMounted(() => {
+  if (isLoggedIn.value) {
+    loadPendingFriendCount()
+  }
+})
 </script>
 
 <style lang="scss" scoped>

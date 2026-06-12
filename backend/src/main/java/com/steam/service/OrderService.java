@@ -27,6 +27,7 @@ public class OrderService {
     private final UserCouponMapper userCouponMapper;
     private final CouponMapper couponMapper;
     private final AchievementService achievementService;
+    private final ActivityService activityService;
 
     @Transactional
     public Order createOrder(Long userId, List<Long> gameIds, Long userCouponId) {
@@ -260,6 +261,12 @@ public class OrderService {
             achievementService.triggerOrderPaid(userId, order.getId());
         } catch (Exception e) {
             log.error("触发成就计算失败: orderId={}, userId={}", order.getId(), userId, e);
+        }
+
+        try {
+            activityService.createPurchaseActivity(userId, order.getId());
+        } catch (Exception e) {
+            log.error("创建购买动态失败: orderId={}, userId={}", order.getId(), userId, e);
         }
 
         return order;

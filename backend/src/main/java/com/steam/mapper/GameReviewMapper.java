@@ -61,4 +61,7 @@ public interface GameReviewMapper {
 
     @Select("SELECT COUNT(*) FROM game_reviews WHERE user_id = #{userId}")
     Integer countByUserId(Long userId);
+
+    @Select("SELECT * FROM game_reviews WHERE id = #{id}")
+    GameReview findById(Long id);
 }

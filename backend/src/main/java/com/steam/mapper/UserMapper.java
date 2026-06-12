@@ -3,6 +3,8 @@ package com.steam.mapper;
 import com.steam.entity.User;
 import org.apache.ibatis.annotations.*;
 
+import java.util.List;
+
 /**
  * 用户Mapper接口
  */
@@ -32,4 +34,16 @@ public interface UserMapper {
     
     @Update("UPDATE users SET password = #{password}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
     int updatePassword(@Param("id") Long id, @Param("password") String password);
+
+    @Select("SELECT id, username, nickname, avatar, status FROM users " +
+            "WHERE (username LIKE CONCAT('%', #{keyword}, '%') OR nickname LIKE CONCAT('%', #{keyword}, '%')) " +
+            "AND status = 1 " +
+            "ORDER BY username ASC " +
+            "LIMIT #{offset}, #{size}")
+    List<User> searchUsers(@Param("keyword") String keyword, @Param("offset") int offset, @Param("size") int size);
+
+    @Select("SELECT COUNT(*) FROM users " +
+            "WHERE (username LIKE CONCAT('%', #{keyword}, '%') OR nickname LIKE CONCAT('%', #{keyword}, '%')) " +
+            "AND status = 1")
+    Long countUsersByKeyword(String keyword);
 }

@@ -27,6 +27,7 @@ public class ReviewService {
     private final UserLibraryMapper userLibraryMapper;
     private final RateLimitService rateLimitService;
     private final AchievementService achievementService;
+    private final ActivityService activityService;
     
     /**
      * 获取游戏评论列表
@@ -82,6 +83,12 @@ public class ReviewService {
             achievementService.triggerReviewCreated(userId, review.getId());
         } catch (Exception e) {
             log.error("触发成就计算失败: reviewId={}, userId={}", review.getId(), userId, e);
+        }
+
+        try {
+            activityService.createReviewActivity(userId, review.getId());
+        } catch (Exception e) {
+            log.error("创建评论动态失败: reviewId={}, userId={}", review.getId(), userId, e);
         }
 
         return review;

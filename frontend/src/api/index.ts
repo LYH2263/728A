@@ -222,7 +222,9 @@ export const adminGameApi = {
     api.put('/admin/games/stock/batch', { gameIds, stock }),
   batchUpdateStatus: (gameIds: number[], status: number) =>
     api.put('/admin/games/status/batch', { gameIds, status }),
-  getStats: () => api.get('/admin/games/stats')
+  getStats: () => api.get('/admin/games/stats'),
+  getStockLogs: (id: number, page: number = 1, size: number = 20) =>
+    api.get(`/admin/games/${id}/stock-logs`, { params: { page, size } })
 }
 
 // 钱包相关

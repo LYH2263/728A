@@ -6,7 +6,9 @@ import com.steam.dto.PageResult;
 import com.steam.dto.Result;
 import com.steam.dto.StockAdjustDTO;
 import com.steam.entity.Game;
+import com.steam.entity.StockChangeLog;
 import com.steam.service.GameService;
+import com.steam.service.StockChangeLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import java.util.Map;
 public class AdminGameController {
     
     private final GameService gameService;
+    private final StockChangeLogService stockChangeLogService;
     
     private boolean isAdmin(HttpServletRequest request) {
         String role = (String) request.getAttribute("role");
@@ -48,8 +51,10 @@ public class AdminGameController {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return Result.error(403, "没有权限访问");
         }
+        Long adminId = (Long) request.getAttribute("userId");
+        String adminUsername = (String) request.getAttribute("username");
         Integer stock = body.get("stock");
-        gameService.updateGameStock(id, stock);
+        gameService.updateGameStock(id, stock, adminId, adminUsername);
         return Result.successMessage("库存更新成功");
     }
     
@@ -61,7 +66,9 @@ public class AdminGameController {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return Result.error(403, "没有权限访问");
         }
-        int count = gameService.batchUpdateStock(dto.getGameIds(), dto.getStock());
+        Long adminId = (Long) request.getAttribute("userId");
+        String adminUsername = (String) request.getAttribute("username");
+        int count = gameService.batchUpdateStock(dto.getGameIds(), dto.getStock(), adminId, adminUsername);
         return Result.successMessage("成功更新 " + count + " 个游戏的库存");
     }
     
@@ -88,5 +95,19 @@ public class AdminGameController {
         stats.put("lowStockCount", gameService.getLowStockCount());
         stats.put("stockThreshold", gameService.getStockThreshold());
         return Result.success(stats);
+    }
+    
+    @GetMapping("/{id}/stock-logs")
+    public Result<PageResult<StockChangeLog>> getStockLogs(@PathVariable Long id,
+                                                           @RequestParam(defaultValue = "1") Integer page,
+                                                           @RequestParam(defaultValue = "20") Integer size,
+                                                           HttpServletRequest request,
+                                                           HttpServletResponse response) {
+        if (!isAdmin(request)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return Result.error(403, "没有权限访问");
+        }
+        PageResult<StockChangeLog> result = stockChangeLogService.getGameStockLogs(id, page, size);
+        return Result.success(result);
     }
 }

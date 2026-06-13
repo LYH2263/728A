@@ -662,3 +662,23 @@ CREATE TABLE IF NOT EXISTS `wallet_transactions` (
     INDEX `idx_user_created` (`user_id`, `created_at`),
     INDEX `idx_user_type` (`user_id`, `type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='钱包流水表';
+
+-- ===================== 库存变更历史系统 =====================
+
+CREATE TABLE IF NOT EXISTS `stock_change_logs` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `game_id` BIGINT NOT NULL COMMENT '游戏ID',
+    `admin_id` BIGINT NOT NULL COMMENT '操作管理员ID',
+    `admin_username` VARCHAR(50) COMMENT '操作管理员用户名',
+    `stock_before` INT NOT NULL COMMENT '变更前库存',
+    `stock_after` INT NOT NULL COMMENT '变更后库存',
+    `change_type` ENUM('ADJUST', 'BATCH_ADJUST', 'ORDER_DEDUCT', 'ORDER_RESTORE') DEFAULT 'ADJUST' COMMENT '变更类型: ADJUST单个调整, BATCH_ADJUST批量调整, ORDER_DEDUCT订单扣减, ORDER_RESTORE订单回补',
+    `remark` VARCHAR(500) COMMENT '备注',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`game_id`) REFERENCES `games`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`admin_id`) REFERENCES `users`(`id`),
+    INDEX `idx_game_id` (`game_id`),
+    INDEX `idx_admin_id` (`admin_id`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_game_created` (`game_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='库存变更历史记录表';

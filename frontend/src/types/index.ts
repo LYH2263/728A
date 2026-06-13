@@ -65,6 +65,19 @@ export interface Game {
   preorderUnlockDate?: string
 }
 
+// 库存变更记录
+export interface StockChangeLog {
+  id: number
+  gameId: number
+  adminId: number
+  adminUsername?: string
+  stockBefore: number
+  stockAfter: number
+  changeType: string
+  remark?: string
+  createdAt: string
+}
+
 // 分类
 export interface Category {
   id: number

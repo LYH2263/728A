@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -25,6 +26,7 @@ public class GameService {
     
     private final GameMapper gameMapper;
     private final CategoryMapper categoryMapper;
+    private final StockChangeLogService stockChangeLogService;
     
     @Value("${game.stock-threshold:10}")
     private Integer stockThreshold;
@@ -167,20 +169,45 @@ public class GameService {
         return PageResult.of(games, total, query.getPage(), query.getSize());
     }
     
-    public int batchUpdateStock(List<Long> gameIds, Integer stock) {
+    @Transactional
+    public int batchUpdateStock(List<Long> gameIds, Integer stock, Long adminId, String adminUsername) {
         if (gameIds == null || gameIds.isEmpty()) {
             return 0;
         }
         if (stock == null || stock < 0) {
             throw new RuntimeException("库存数量不能为负数");
         }
+        for (Long gameId : gameIds) {
+            Game game = gameMapper.findByIdIgnoreStatus(gameId);
+            if (game != null) {
+                int stockBefore = game.getStock() != null ? game.getStock() : 0;
+                stockChangeLogService.createLog(
+                        gameId, adminId, adminUsername,
+                        stockBefore, stock,
+                        "BATCH_ADJUST",
+                        "批量调整库存"
+                );
+            }
+        }
         return gameMapper.updateStockByIds(gameIds, stock);
     }
     
-    public int updateGameStock(Long gameId, Integer stock) {
+    @Transactional
+    public int updateGameStock(Long gameId, Integer stock, Long adminId, String adminUsername) {
         if (stock == null || stock < 0) {
             throw new RuntimeException("库存数量不能为负数");
         }
+        Game game = gameMapper.findByIdIgnoreStatus(gameId);
+        if (game == null) {
+            throw new RuntimeException("游戏不存在");
+        }
+        int stockBefore = game.getStock() != null ? game.getStock() : 0;
+        stockChangeLogService.createLog(
+                gameId, adminId, adminUsername,
+                stockBefore, stock,
+                "ADJUST",
+                "单个调整库存"
+        );
         return gameMapper.updateStockByIds(List.of(gameId), stock);
     }
     

@@ -65,6 +65,7 @@
       v-loading="loading"
       row-key="id"
       @selection-change="handleSelectionChange"
+      @sort-change="handleSortChange"
       :row-class-name="tableRowClassName"
       border
       stripe
@@ -83,8 +84,20 @@
           <span v-else class="price">¥{{ row.originalPrice }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="salesCount" label="销量" width="100" sortable :sort-orders="['ascending', 'descending']" @sort-change="handleSortChange" />
-      <el-table-column prop="stock" label="库存" width="140">
+      <el-table-column
+        prop="salesCount"
+        label="销量"
+        width="110"
+        sortable="custom"
+        :sort-orders="['ascending', 'descending', null]"
+      />
+      <el-table-column
+        prop="stock"
+        label="库存"
+        width="160"
+        sortable="custom"
+        :sort-orders="['ascending', 'descending', null]"
+      >
         <template #default="{ row }">
           <div class="stock-cell">
             <el-input-number
@@ -108,7 +121,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
+      <el-table-column label="操作" width="230" fixed="right">
         <template #default="{ row }">
           <template v-if="row.editing">
             <el-button type="primary" size="small" @click="saveStock(row)">保存</el-button>
@@ -123,6 +136,7 @@
             >
               {{ row.status === 1 ? '下架' : '上架' }}
             </el-button>
+            <el-button size="small" @click="openStockLogs(row)">变更记录</el-button>
           </template>
         </template>
       </el-table-column>
@@ -152,15 +166,62 @@
         <el-button type="primary" @click="confirmBatchStock">确认</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="showStockLogsDialog" :title="`库存变更记录 - ${currentLogGame?.title || ''}`" width="700px">
+      <el-table
+        :data="stockLogList"
+        v-loading="logsLoading"
+        border
+        stripe
+      >
+        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="adminUsername" label="操作人" width="120">
+          <template #default="{ row }">
+            {{ row.adminUsername || 'ID:' + row.adminId }}
+          </template>
+        </el-table-column>
+        <el-table-column label="变更类型" width="120">
+          <template #default="{ row }">
+            <el-tag size="small" :type="changeTypeTagType(row.changeType)">
+              {{ changeTypeLabel(row.changeType) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="库存变化" width="180">
+          <template #default="{ row }">
+            <span class="stock-change">
+              <span class="stock-before">{{ row.stockBefore }}</span>
+              <el-icon class="arrow-icon"><Right /></el-icon>
+              <span class="stock-after">{{ row.stockAfter }}</span>
+              <span :class="row.stockAfter >= row.stockBefore ? 'diff-plus' : 'diff-minus'">
+                ({{ row.stockAfter >= row.stockBefore ? '+' : '' }}{{ row.stockAfter - row.stockBefore }})
+              </span>
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="remark" label="备注" min-width="120" />
+        <el-table-column prop="createdAt" label="时间" width="170" />
+      </el-table>
+      <div class="logs-pagination" v-if="stockLogTotal > 20">
+        <el-pagination
+          v-model:current-page="logsCurrentPage"
+          v-model:page-size="20"
+          :total="stockLogTotal"
+          layout="prev, pager, next, total"
+          background
+          @current-change="fetchStockLogs"
+        />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Warning } from '@element-plus/icons-vue'
+import { Search, Warning, Right } from '@element-plus/icons-vue'
 import { adminGameApi } from '@/api'
-import type { Game, PageResult } from '@/types'
+import type { Game, PageResult, StockChangeLog } from '@/types'
 
 const loading = ref(false)
 const gameList = ref<Game[]>([])
@@ -178,11 +239,38 @@ const batchStockValue = ref(0)
 const sortField = ref('')
 const sortOrder = ref('')
 
+const showStockLogsDialog = ref(false)
+const currentLogGame = ref<Game | null>(null)
+const stockLogList = ref<StockChangeLog[]>([])
+const stockLogTotal = ref(0)
+const logsCurrentPage = ref(1)
+const logsLoading = ref(false)
+
 const tableRowClassName = ({ row }: { row: Game }) => {
   if (row.lowStock) {
     return 'low-stock-row'
   }
   return ''
+}
+
+function changeTypeLabel(type: string) {
+  const map: Record<string, string> = {
+    ADJUST: '单个调整',
+    BATCH_ADJUST: '批量调整',
+    ORDER_DEDUCT: '订单扣减',
+    ORDER_RESTORE: '订单回补'
+  }
+  return map[type] || type
+}
+
+function changeTypeTagType(type: string) {
+  const map: Record<string, string> = {
+    ADJUST: 'primary',
+    BATCH_ADJUST: 'warning',
+    ORDER_DEDUCT: 'danger',
+    ORDER_RESTORE: 'success'
+  }
+  return map[type] || 'info'
 }
 
 async function fetchStats() {
@@ -240,9 +328,16 @@ function handleSortChange({ prop, order }: { prop: string, order: string | null 
     sortField.value = ''
     sortOrder.value = ''
   } else {
-    sortField.value = prop === 'salesCount' ? 'sales' : prop
+    if (prop === 'stock') {
+      sortField.value = 'stock'
+    } else if (prop === 'salesCount') {
+      sortField.value = 'sales'
+    } else {
+      sortField.value = prop
+    }
     sortOrder.value = order === 'ascending' ? 'asc' : 'desc'
   }
+  currentPage.value = 1
   fetchGames()
 }
 
@@ -338,6 +433,30 @@ async function confirmBatchStock() {
     fetchStats()
   } catch (error) {
     console.error('批量调整库存失败', error)
+  }
+}
+
+async function openStockLogs(row: Game) {
+  currentLogGame.value = row
+  logsCurrentPage.value = 1
+  stockLogList.value = []
+  stockLogTotal.value = 0
+  showStockLogsDialog.value = true
+  await fetchStockLogs()
+}
+
+async function fetchStockLogs() {
+  if (!currentLogGame.value) return
+  logsLoading.value = true
+  try {
+    const res = await adminGameApi.getStockLogs(currentLogGame.value.id, logsCurrentPage.value, 20)
+    const data: PageResult<StockChangeLog> = res.data.data
+    stockLogList.value = data.list
+    stockLogTotal.value = data.total
+  } catch (error) {
+    console.error('获取库存变更记录失败', error)
+  } finally {
+    logsLoading.value = false
   }
 }
 
@@ -484,6 +603,41 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+}
+
+.logs-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.stock-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+
+  .arrow-icon {
+    color: #909399;
+    font-size: 12px;
+  }
+
+  .stock-before {
+    color: #606266;
+  }
+
+  .stock-after {
+    color: #303133;
+    font-weight: bold;
+  }
+
+  .diff-plus {
+    color: #67c23a;
+  }
+
+  .diff-minus {
+    color: #f56c6c;
+  }
 }
 
 :deep(.low-stock-row) {

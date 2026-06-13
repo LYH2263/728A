@@ -133,9 +133,9 @@
                 :label="getCouponLabel(uc)"
               >
                 <div class="coupon-option">
-                  <span class="coupon-option-name">{{ uc.coupon?.name }}</span>
+                  <span class="coupon-option-name">{{ uc.coupon?.name || '' }}</span>
                   <span class="coupon-option-desc">
-                    {{ getCouponValueText(uc.coupon!) }}
+                    {{ uc.coupon ? getCouponValueText(uc.coupon) : '' }}
                   </span>
                 </div>
               </el-option>
@@ -324,12 +324,15 @@ watch(
 async function loadApplicableCoupons() {
   if (cartStore.items.length === 0) {
     applicableCoupons.value = []
+    selectedCouponId.value = null
+    couponDiscount.value = 0
     return
   }
   try {
-    const gameIds = cartStore.items.map(item => item.gameId)
+    const gameIds = cartStore.items.map(item => Number(item.gameId))
     const res = await couponApi.getApplicableCoupons(gameIds)
-    applicableCoupons.value = res.data.data || []
+    const list = (res.data.data || []) as UserCoupon[]
+    applicableCoupons.value = list.filter(uc => uc && uc.coupon)
 
     if (applicableCoupons.value.length > 0 && !selectedCouponId.value) {
       const best = applicableCoupons.value[0]
@@ -346,6 +349,8 @@ async function loadApplicableCoupons() {
     }
   } catch (error) {
     applicableCoupons.value = []
+    selectedCouponId.value = null
+    couponDiscount.value = 0
   }
 }
 
@@ -393,15 +398,16 @@ function getCouponLabel(uc: UserCoupon): string {
 }
 
 function getCouponValueText(coupon: any): string {
+  if (!coupon) return ''
   if (coupon.type === 'FULL_REDUCTION') {
-    return `满${coupon.minAmount}减${coupon.value}`
+    return `满${coupon.minAmount || 0}减${coupon.value || 0}`
   } else if (coupon.type === 'DISCOUNT') {
-    return `${coupon.value / 10}折优惠`
+    return `${(coupon.value || 0) / 10}折优惠`
   } else if (coupon.type === 'CATEGORY') {
-    if (coupon.value > 50) {
-      return `指定分类${coupon.value / 10}折`
+    if ((coupon.value || 0) > 50) {
+      return `指定分类${(coupon.value || 0) / 10}折`
     } else {
-      return `指定分类减${coupon.value}`
+      return `指定分类减${coupon.value || 0}`
     }
   }
   return ''

@@ -64,8 +64,8 @@
             <div class="coupon-desc" v-if="uc.coupon?.description">
               {{ uc.coupon.description }}
             </div>
-            <div class="coupon-time">
-              有效期：{{ formatDate(uc.coupon!.validStart) }} ~ {{ formatDate(uc.coupon!.validEnd) }}
+            <div class="coupon-time" v-if="uc.coupon">
+              有效期：{{ formatDate(uc.coupon.validStart) }} ~ {{ formatDate(uc.coupon.validEnd) }}
             </div>
             <div class="coupon-status">
               <template v-if="uc.status === 'UNUSED'">
@@ -110,18 +110,18 @@ async function loadCoupons() {
   try {
     const status = activeTab.value === 'EXPIRED' ? '' : activeTab.value
     const res = await couponApi.getMyCoupons(status)
-    const list = res.data.data || []
+    const list: UserCoupon[] = (res.data.data || []).filter((uc: UserCoupon) => uc && uc.coupon)
 
     if (activeTab.value === 'EXPIRED') {
-      coupons.value = list.filter((uc: UserCoupon) => {
-        return uc.status === 'EXPIRED' || (uc.coupon && new Date(uc.coupon.validEnd) < new Date())
+      coupons.value = list.filter(uc => {
+        return uc.status === 'EXPIRED' || new Date(uc.coupon!.validEnd) < new Date()
       })
     } else if (activeTab.value === 'UNUSED') {
-      coupons.value = list.filter((uc: UserCoupon) => {
-        return uc.status === 'UNUSED' && uc.coupon && new Date(uc.coupon.validEnd) >= new Date()
+      coupons.value = list.filter(uc => {
+        return uc.status === 'UNUSED' && new Date(uc.coupon!.validEnd) >= new Date()
       })
     } else {
-      coupons.value = list.filter((uc: UserCoupon) => uc.status === 'USED')
+      coupons.value = list.filter(uc => uc.status === 'USED')
     }
   } catch (error) {
     coupons.value = []

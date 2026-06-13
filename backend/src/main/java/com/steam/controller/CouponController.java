@@ -1,5 +1,6 @@
 package com.steam.controller;
 
+import com.steam.dto.CouponApplyDTO;
 import com.steam.dto.Result;
 import com.steam.entity.Coupon;
 import com.steam.entity.UserCoupon;
@@ -43,9 +44,12 @@ public class CouponController {
 
     @PostMapping("/applicable")
     public Result<List<UserCoupon>> getApplicableCoupons(HttpServletRequest request,
-                                                          @RequestBody Map<String, List<Long>> body) {
+                                                          @RequestBody CouponApplyDTO dto) {
         Long userId = (Long) request.getAttribute("userId");
-        List<Long> gameIds = body.get("gameIds");
+        List<Long> gameIds = dto.getGameIds();
+        if (gameIds == null || gameIds.isEmpty()) {
+            return Result.success(java.util.Collections.emptyList());
+        }
         List<UserCoupon> coupons = couponService.getApplicableCoupons(userId, gameIds);
         return Result.success(coupons);
     }

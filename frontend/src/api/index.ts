@@ -116,7 +116,7 @@ export const couponApi = {
   claimCoupon: (code: string) => api.post('/coupons/claim', { code }),
   getMyCoupons: (status?: string) => api.get('/coupons/my', { params: { status } }),
   getAvailableCoupons: () => api.get('/coupons/available'),
-  getApplicableCoupons: (gameIds: number[]) => api.post('/coupons/applicable', { gameIds }),
+  getApplicableCoupons: (gameIds: number[]) => api.post('/coupons/applicable', { gameIds } as { gameIds: number[] }),
   getCouponByCode: (code: string) => api.get(`/coupons/${code}`)
 }
 

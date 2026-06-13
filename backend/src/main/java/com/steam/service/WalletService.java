@@ -51,7 +51,7 @@ public class WalletService {
 
     @Transactional
     public void updateBalance(Long userId, BigDecimal amount, String type, String orderNo, String description) {
-        User user = userMapper.findById(userId);
+        User user = userMapper.findByIdForUpdate(userId);
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -63,7 +63,7 @@ public class WalletService {
             throw new RuntimeException("余额不足");
         }
 
-        userMapper.updateBalance(userId, balanceAfter);
+        userMapper.addBalance(userId, amount);
 
         WalletTransaction transaction = new WalletTransaction();
         transaction.setUserId(userId);

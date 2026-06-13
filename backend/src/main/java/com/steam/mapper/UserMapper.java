@@ -31,6 +31,12 @@ public interface UserMapper {
     
     @Update("UPDATE users SET balance = #{balance}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
     int updateBalance(@Param("id") Long id, @Param("balance") java.math.BigDecimal balance);
+
+    @Select("SELECT * FROM users WHERE id = #{id} FOR UPDATE")
+    User findByIdForUpdate(Long id);
+
+    @Update("UPDATE users SET balance = balance + #{amount}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
+    int addBalance(@Param("id") Long id, @Param("amount") java.math.BigDecimal amount);
     
     @Update("UPDATE users SET password = #{password}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
     int updatePassword(@Param("id") Long id, @Param("password") String password);

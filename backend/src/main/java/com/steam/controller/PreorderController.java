@@ -42,9 +42,7 @@ public class PreorderController {
     @GetMapping("/summary")
     public Result<Map<String, Object>> getPreorderSummary(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
-        Map<String, Object> summary = new HashMap<>();
-        summary.put("count", preorderService.getPreorderCount(userId));
-        summary.put("list", preorderService.getUserPreorders(userId));
+        Map<String, Object> summary = preorderService.getPreorderSummary(userId);
         return Result.success(summary);
     }
 }

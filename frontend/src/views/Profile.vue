@@ -60,8 +60,9 @@
         <div class="stat-card preorder" @click="goToPreorders">
           <el-icon :size="32" color="#e6a23c"><Clock /></el-icon>
           <div class="stat-info">
-            <span class="stat-value">{{ preorderCount }}</span>
+            <span class="stat-value">{{ preorderSummary.pendingCount }}</span>
             <span class="stat-label">预购中</span>
+            <span class="stat-sub">已付 ¥{{ preorderSummary.totalPaid.toFixed(2) }} · 已转正 {{ preorderSummary.releasedCount }}</span>
           </div>
         </div>
         <div class="stat-card" @click="goToCart">
@@ -167,7 +168,7 @@ import { useUserStore } from '@/store/user'
 import { useCartStore } from '@/store/cart'
 import { libraryApi, wishlistApi, couponApi, achievementApi, refundApi, preorderApi } from '@/api'
 import { ElMessage } from 'element-plus'
-import type { AchievementStats } from '@/types'
+import type { AchievementStats, PreorderSummary } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -184,7 +185,12 @@ function getAvatarUrl(avatar: string | undefined): string {
 }
 
 const libraryCount = ref(0)
-const preorderCount = ref(0)
+const preorderSummary = ref<PreorderSummary>({
+  totalCount: 0,
+  pendingCount: 0,
+  releasedCount: 0,
+  totalPaid: 0
+})
 const wishlistCount = ref(0)
 const couponCount = ref(0)
 const refundCount = ref(0)
@@ -220,7 +226,7 @@ onMounted(async () => {
   
   await Promise.all([
     fetchLibraryCount(),
-    fetchPreorderCount(),
+    fetchPreorderSummary(),
     fetchWishlistCount(),
     fetchCouponCount(),
     fetchAchievementStats(),
@@ -237,12 +243,23 @@ async function fetchLibraryCount() {
   }
 }
 
-async function fetchPreorderCount() {
+async function fetchPreorderSummary() {
   try {
-    const res = await preorderApi.getPreorderCount()
-    preorderCount.value = res.data.data || 0
+    const res = await preorderApi.getPreorderSummary()
+    const data = res.data.data || {}
+    preorderSummary.value = {
+      totalCount: data.totalCount || 0,
+      pendingCount: data.pendingCount || 0,
+      releasedCount: data.releasedCount || 0,
+      totalPaid: Number(data.totalPaid || 0)
+    }
   } catch (error) {
-    preorderCount.value = 0
+    preorderSummary.value = {
+      totalCount: 0,
+      pendingCount: 0,
+      releasedCount: 0,
+      totalPaid: 0
+    }
   }
 }
 
@@ -462,6 +479,13 @@ async function handleRecharge() {
     .stat-label {
       font-size: 14px;
       color: var(--text-secondary);
+    }
+    
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      opacity: 0.8;
+      margin-top: 2px;
     }
   }
 }

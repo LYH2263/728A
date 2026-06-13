@@ -284,7 +284,13 @@ async function fetchPreorders() {
       preorderApi.getPreorderSummary()
     ])
     preorders.value = listRes.data.data || []
-    summary.value = summaryRes.data.data || summary.value
+    const sumData = summaryRes.data.data || {}
+    summary.value = {
+      totalCount: sumData.totalCount || 0,
+      pendingCount: sumData.pendingCount || 0,
+      releasedCount: sumData.releasedCount || 0,
+      totalPaid: Number(sumData.totalPaid || 0)
+    }
   } catch (err) {
     ElMessage.error('获取预购列表失败')
   } finally {

@@ -11,8 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -30,6 +33,19 @@ public class PreorderService {
 
     public int getPreorderCount(Long userId) {
         return userPreorderMapper.countPendingByUserId(userId);
+    }
+
+    public Map<String, Object> getPreorderSummary(Long userId) {
+        Map<String, Object> summary = new HashMap<>();
+        int totalCount = userPreorderMapper.countTotalByUserId(userId);
+        int pendingCount = userPreorderMapper.countPendingByUserId(userId);
+        int releasedCount = userPreorderMapper.countReleasedByUserId(userId);
+        BigDecimal totalPaid = userPreorderMapper.sumTotalPaidByUserId(userId);
+        summary.put("totalCount", totalCount);
+        summary.put("pendingCount", pendingCount);
+        summary.put("releasedCount", releasedCount);
+        summary.put("totalPaid", totalPaid);
+        return summary;
     }
 
     public boolean hasPreordered(Long userId, Long gameId) {

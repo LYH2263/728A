@@ -50,6 +50,15 @@ public interface UserPreorderMapper {
     @Select("SELECT COUNT(*) FROM user_preorders WHERE user_id = #{userId} AND status = 'PENDING_RELEASE'")
     int countPendingByUserId(Long userId);
 
+    @Select("SELECT COUNT(*) FROM user_preorders WHERE user_id = #{userId} AND status = 'RELEASED'")
+    int countReleasedByUserId(Long userId);
+
+    @Select("SELECT COUNT(*) FROM user_preorders WHERE user_id = #{userId}")
+    int countTotalByUserId(Long userId);
+
+    @Select("SELECT COALESCE(SUM(price_paid), 0) FROM user_preorders WHERE user_id = #{userId}")
+    java.math.BigDecimal sumTotalPaidByUserId(Long userId);
+
     @Select("SELECT EXISTS(SELECT 1 FROM user_preorders WHERE user_id = #{userId} AND game_id = #{gameId} AND status = 'PENDING_RELEASE')")
     boolean existsPendingByUserIdAndGameId(@Param("userId") Long userId, @Param("gameId") Long gameId);
 

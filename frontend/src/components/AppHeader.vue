@@ -288,6 +288,10 @@ onMounted(() => {
     loadPendingFriendCount()
   }
 })
+
+defineExpose({
+  refreshPendingCount: loadPendingFriendCount
+})
 </script>
 
 <style lang="scss" scoped>

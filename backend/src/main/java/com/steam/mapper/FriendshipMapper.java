@@ -71,4 +71,25 @@ public interface FriendshipMapper {
 
     @Select("SELECT friend_id FROM friendships WHERE user_id = #{userId} AND status = 'ACCEPTED'")
     List<Long> findFriendIdsByUserId(Long userId);
+
+    @Select("SELECT f.*, u.id as user_id, u.username, u.nickname, u.avatar, u.status " +
+            "FROM friendships f " +
+            "INNER JOIN users u ON f.friend_id = u.id " +
+            "WHERE f.user_id = #{userId} AND f.status = 'PENDING' " +
+            "ORDER BY f.created_at DESC")
+    @Results({
+            @Result(property = "id", column = "id"),
+            @Result(property = "userId", column = "user_id"),
+            @Result(property = "friendId", column = "friend_id"),
+            @Result(property = "status", column = "status"),
+            @Result(property = "actionUserId", column = "action_user_id"),
+            @Result(property = "createdAt", column = "created_at"),
+            @Result(property = "updatedAt", column = "updated_at"),
+            @Result(property = "friendUser.id", column = "user_id"),
+            @Result(property = "friendUser.username", column = "username"),
+            @Result(property = "friendUser.nickname", column = "nickname"),
+            @Result(property = "friendUser.avatar", column = "avatar"),
+            @Result(property = "friendUser.status", column = "status")
+    })
+    List<Friendship> findSentRequests(Long userId);
 }

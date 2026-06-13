@@ -33,6 +33,13 @@ public class FriendshipController {
         return Result.success(requests);
     }
 
+    @GetMapping("/sent")
+    public Result<List<Friendship>> getSentRequests(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        List<Friendship> requests = friendshipService.getSentRequests(userId);
+        return Result.success(requests);
+    }
+
     @GetMapping("/pending/count")
     public Result<Long> getPendingCount(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");

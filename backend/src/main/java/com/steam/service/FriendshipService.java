@@ -29,6 +29,10 @@ public class FriendshipService {
         return friendshipMapper.findPendingRequests(userId);
     }
 
+    public List<Friendship> getSentRequests(Long userId) {
+        return friendshipMapper.findSentRequests(userId);
+    }
+
     public Long getPendingRequestCount(Long userId) {
         return friendshipMapper.countPendingRequests(userId);
     }

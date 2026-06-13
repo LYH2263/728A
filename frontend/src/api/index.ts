@@ -181,6 +181,7 @@ export const refundApi = {
 export const friendApi = {
   getFriends: () => api.get('/friends/list'),
   getPendingRequests: () => api.get('/friends/pending'),
+  getSentRequests: () => api.get('/friends/sent'),
   getPendingCount: () => api.get('/friends/pending/count'),
   getBlockedUsers: () => api.get('/friends/blocked'),
   searchUsers: (keyword: string, page: number = 1, size: number = 10) =>

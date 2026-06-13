@@ -205,7 +205,7 @@
       <div class="logs-pagination" v-if="stockLogTotal > 20">
         <el-pagination
           v-model:current-page="logsCurrentPage"
-          v-model:page-size="20"
+          :page-size="20"
           :total="stockLogTotal"
           layout="prev, pager, next, total"
           background
@@ -217,7 +217,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Warning, Right } from '@element-plus/icons-vue'
 import { adminGameApi } from '@/api'

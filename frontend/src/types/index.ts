@@ -320,3 +320,41 @@ export interface PreorderSummary {
   releasedCount: number
   totalPaid: number
 }
+
+// 钱包交易类型
+export type WalletTransactionType = 'RECHARGE' | 'PURCHASE' | 'REFUND' | 'GIFT'
+
+// 钱包流水
+export interface WalletTransaction {
+  id: number
+  userId: number
+  type: WalletTransactionType
+  amount: number
+  balanceBefore: number
+  balanceAfter: number
+  orderNo?: string
+  description?: string
+  createdAt: string
+}
+
+// 月度汇总
+export interface WalletMonthlySummary {
+  month: string
+  income: number
+  expense: number
+  netIncome: number
+}
+
+// 趋势数据
+export interface WalletTrendItem {
+  month: string
+  income: number
+  expense: number
+}
+
+// 钱包概览
+export interface WalletOverview {
+  balance: number
+  monthlySummary: WalletMonthlySummary
+  trendData: WalletTrendItem[]
+}

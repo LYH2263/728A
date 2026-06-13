@@ -27,6 +27,7 @@ public class RefundService {
     private final UserMapper userMapper;
     private final GameMapper gameMapper;
     private final UserLibraryMapper userLibraryMapper;
+    private final WalletService walletService;
 
     @Transactional
     public RefundRequest applyRefund(Long userId, Long orderItemId, String reason) {
@@ -158,12 +159,8 @@ public class RefundService {
 
         BigDecimal refundAmount = calculateRefundAmount(order, orderItem);
 
-        User user = userMapper.findById(request.getUserId());
-        if (user == null) {
-            throw new RuntimeException("用户不存在");
-        }
-        BigDecimal newBalance = user.getBalance() != null ? user.getBalance().add(refundAmount) : refundAmount;
-        userMapper.updateBalance(request.getUserId(), newBalance);
+        walletService.refund(request.getUserId(), refundAmount, order.getOrderNo(),
+                "游戏退款: " + request.getGameTitle() + "，退款单号: " + request.getRefundNo());
 
         userLibraryMapper.deleteByUserIdAndGameId(request.getUserId(), request.getGameId());
 

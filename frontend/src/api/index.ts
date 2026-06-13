@@ -218,3 +218,13 @@ export const adminGameApi = {
     api.put('/admin/games/status/batch', { gameIds, status }),
   getStats: () => api.get('/admin/games/stats')
 }
+
+// 钱包相关
+export const walletApi = {
+  getOverview: () => api.get('/wallet/overview'),
+  getTransactions: (params?: { type?: string; month?: string; page?: number; size?: number }) =>
+    api.get('/wallet/transactions', { params }),
+  getMonthlySummary: (month?: string) =>
+    api.get('/wallet/summary', { params: month ? { month } : {} }),
+  getTrendData: () => api.get('/wallet/trend')
+}

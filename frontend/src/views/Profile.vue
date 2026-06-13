@@ -99,6 +99,13 @@
             <span class="stat-label">退款记录</span>
           </div>
         </div>
+        <div class="stat-card wallet" @click="goToWallet">
+          <el-icon :size="32" color="var(--steam-green)"><Wallet /></el-icon>
+          <div class="stat-info">
+            <span class="stat-value">¥{{ (userInfo?.balance || 0).toFixed(2) }}</span>
+            <span class="stat-label">我的钱包</span>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -297,6 +304,10 @@ function goToCoupons() {
 
 function goToRefunds() {
   router.push('/refunds')
+}
+
+function goToWallet() {
+  router.push('/wallet')
 }
 
 function goToAchievements() {

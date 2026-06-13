@@ -26,6 +26,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final PreorderService preorderService;
+    private final WalletService walletService;
     
     /**
      * 用户登录
@@ -141,18 +142,20 @@ public class UserService {
     }
     
     /**
-     * 更新用户余额
+     * 更新用户余额（已弃用，请使用 WalletService）
+     * 保留此方法用于兼容，内部转发给 WalletService
      */
     @Transactional
+    @Deprecated
     public void updateBalance(Long id, BigDecimal amount) {
-        User user = userMapper.findById(id);
-        if (user == null) {
-            throw new RuntimeException("用户不存在");
-        }
-        BigDecimal newBalance = user.getBalance().add(amount);
-        if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new RuntimeException("余额不足");
-        }
-        userMapper.updateBalance(id, newBalance);
+        walletService.updateBalance(id, amount, WalletService.TYPE_RECHARGE, null, "余额变动");
+    }
+
+    /**
+     * 充值余额
+     */
+    @Transactional
+    public void recharge(Long id, BigDecimal amount) {
+        walletService.recharge(id, amount, "账户充值 ¥" + amount);
     }
 }

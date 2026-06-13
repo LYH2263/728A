@@ -50,7 +50,7 @@ public class UserController {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             return Result.error("充值金额必须大于0");
         }
-        userService.updateBalance(userId, amount);
+        userService.recharge(userId, amount);
         return Result.successMessage("充值成功");
     }
 }

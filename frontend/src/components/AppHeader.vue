@@ -82,6 +82,10 @@
                   <el-icon><UserFilled /></el-icon>
                   好友
                 </el-dropdown-item>
+                <el-dropdown-item command="wallet">
+                  <el-icon><Wallet /></el-icon>
+                  我的钱包
+                </el-dropdown-item>
                 <el-dropdown-item divided command="logout">
                   <el-icon><SwitchButton /></el-icon>
                   退出登录
@@ -148,6 +152,10 @@
           <router-link to="/achievements" class="mobile-nav-item" @click="showMobileMenu = false">
             <el-icon><Trophy /></el-icon>
             成就中心
+          </router-link>
+          <router-link to="/wallet" class="mobile-nav-item" @click="showMobileMenu = false">
+            <el-icon><Wallet /></el-icon>
+            我的钱包
           </router-link>
           <router-link to="/profile" class="mobile-nav-item" @click="showMobileMenu = false">
             <el-icon><User /></el-icon>
@@ -230,6 +238,9 @@ function handleCommand(command: string) {
       break
     case 'friends':
       router.push('/friends')
+      break
+    case 'wallet':
+      router.push('/wallet')
       break
     case 'logout':
       handleLogout()

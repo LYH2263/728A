@@ -29,6 +29,7 @@ public class OrderService {
     private final AchievementService achievementService;
     private final ActivityService activityService;
     private final UserPreorderMapper userPreorderMapper;
+    private final WalletService walletService;
 
     @Transactional
     public Order createOrder(Long userId, List<Long> gameIds, Long userCouponId) {
@@ -224,7 +225,7 @@ public class OrderService {
             throw new RuntimeException("余额不足，请先充值");
         }
 
-        userMapper.updateBalance(userId, user.getBalance().subtract(finalPayAmount));
+        walletService.purchase(userId, finalPayAmount, orderNo, "购买游戏，订单号: " + orderNo);
 
         // 重查订单项以获得每个item的id
         List<OrderItem> finalOrderItems = orderMapper.findOrderItemsByOrderId(order.getId());

@@ -54,6 +54,12 @@ const userRoutes: RouteRecordRaw[] = [
     name: 'Friends',
     component: () => import('@/views/Friends.vue'),
     meta: { title: '好友', requiresAuth: true }
+  },
+  {
+    path: '/wallet',
+    name: 'Wallet',
+    component: () => import('@/views/Wallet.vue'),
+    meta: { title: '我的钱包', requiresAuth: true }
   }
 ]
 

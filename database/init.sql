@@ -603,3 +603,23 @@ INSERT INTO `games` (`title`, `description`, `detail_description`, `cover_image`
 '["赛博朋克", "RPG", "DLC", "谍战", "开放世界"]',
 9999, 1800, 0.0, 0, 0,
 'PREORDER', NULL, 0.00, 0, '2026-09-26 00:00:00');
+
+-- ===================== 钱包流水系统 =====================
+
+CREATE TABLE IF NOT EXISTS `wallet_transactions` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `type` ENUM('RECHARGE', 'PURCHASE', 'REFUND', 'GIFT') NOT NULL COMMENT '交易类型: RECHARGE充值, PURCHASE消费, REFUND退款, GIFT赠送',
+    `amount` DECIMAL(10,2) NOT NULL COMMENT '变动金额(正数为增加,负数为减少)',
+    `balance_before` DECIMAL(10,2) NOT NULL COMMENT '变动前余额',
+    `balance_after` DECIMAL(10,2) NOT NULL COMMENT '变动后余额',
+    `order_no` VARCHAR(50) COMMENT '关联订单号',
+    `description` VARCHAR(500) COMMENT '交易描述',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_user_created` (`user_id`, `created_at`),
+    INDEX `idx_user_type` (`user_id`, `type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='钱包流水表';

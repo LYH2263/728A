@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.steam.mapper.UserPreorderMapper">
+
+    <select id="findReadyToConvert" resultType="com.steam.entity.UserPreorder">
+        SELECT up.*
+        FROM user_preorders up
+        INNER JOIN games g ON up.game_id = g.id
+        WHERE up.status = 'PENDING_RELEASE'
+        AND (
+            (g.release_status = 'RELEASED')
+            OR
+            (g.preorder_unlock_date IS NOT NULL AND g.preorder_unlock_date &lt;= #{now})
+            OR
+            (g.release_status = 'CROWDFUNDING' AND g.current_funding &gt;= g.crowdfunding_goal)
+        )
+    </select>
+
+</mapper>

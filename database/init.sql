@@ -56,11 +56,17 @@ CREATE TABLE IF NOT EXISTS `games` (
     `rating_count` INT DEFAULT 0 COMMENT '评分人数',
     `status` TINYINT DEFAULT 1 COMMENT '状态: 0下架 1上架',
     `is_featured` TINYINT DEFAULT 0 COMMENT '是否精选推荐',
+    `release_status` ENUM('RELEASED', 'PREORDER', 'CROWDFUNDING') DEFAULT 'RELEASED' COMMENT '发售状态: RELEASED已发售, PREORDER预购中, CROWDFUNDING众筹中',
+    `crowdfunding_goal` DECIMAL(12,2) DEFAULT NULL COMMENT '众筹目标金额',
+    `current_funding` DECIMAL(12,2) DEFAULT 0.00 COMMENT '当前已筹金额',
+    `supporter_count` INT DEFAULT 0 COMMENT '支持者人数',
+    `preorder_unlock_date` DATETIME DEFAULT NULL COMMENT '预购解锁/发售日期时间',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_title` (`title`),
     INDEX `idx_status` (`status`),
-    INDEX `idx_featured` (`is_featured`)
+    INDEX `idx_featured` (`is_featured`),
+    INDEX `idx_release_status` (`release_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='游戏表';
 
 -- 游戏分类关联表
@@ -536,3 +542,64 @@ INSERT INTO `activities` (`user_id`, `type`, `game_id`, `game_title`, `game_cove
 (2, 'REVIEW', 1, '赛博朋克 2077', '/game-assets/cyberpunk-2077/cover.jpg', NULL, NULL, 1, 5, '夜之城真的太美了！剧情和角色都非常出色，强烈推荐！'),
 (3, 'PURCHASE', 9, '黑神话：悟空', '/game-assets/black-myth-wukong/cover.jpg', NULL, NULL, NULL, NULL, NULL),
 (3, 'REVIEW', 9, '黑神话：悟空', '/game-assets/black-myth-wukong/cover.jpg', NULL, NULL, 6, 5, '天命人，踏上西行之路吧！');
+
+-- ===================== 预购与众筹系统 =====================
+
+-- 用户预购表（预购库，游戏发售自动转正到 user_library）
+CREATE TABLE IF NOT EXISTS `user_preorders` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `game_id` BIGINT NOT NULL COMMENT '游戏ID',
+    `order_id` BIGINT NOT NULL COMMENT '关联订单ID',
+    `order_item_id` BIGINT NOT NULL COMMENT '关联订单项ID',
+    `price_paid` DECIMAL(10,2) NOT NULL COMMENT '预购支付价格',
+    `release_status` ENUM('PREORDER', 'CROWDFUNDING') NOT NULL DEFAULT 'PREORDER' COMMENT '预购类型: PREORDER普通预购, CROWDFUNDING众筹',
+    `status` ENUM('PENDING_RELEASE', 'RELEASED', 'CANCELLED') DEFAULT 'PENDING_RELEASE' COMMENT '状态: PENDING_RELEASE待发售, RELEASED已转正, CANCELLED已取消',
+    `converted_at` DATETIME DEFAULT NULL COMMENT '转正时间（转入游戏库）',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`game_id`) REFERENCES `games`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`order_item_id`) REFERENCES `order_items`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `uk_user_game_preorder` (`user_id`, `game_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_game_id` (`game_id`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_release_status` (`release_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户预购表';
+
+-- 插入预购与众筹演示游戏（在现有10款之后）
+INSERT INTO `games` (`title`, `description`, `detail_description`, `cover_image`, `banner_image`, `screenshots`, `original_price`, `discount_price`, `discount_percent`, `developer`, `publisher`, `release_date`, `min_requirements`, `rec_requirements`, `tags`, `stock`, `sales_count`, `rating`, `rating_count`, `is_featured`, `release_status`, `crowdfunding_goal`, `current_funding`, `supporter_count`, `preorder_unlock_date`) VALUES
+('GTA 6', '《侠盗猎车手6》将带您回到罪恶都市，开启全新的开放世界冒险之旅。', '《Grand Theft Auto VI》是Rockstar Games开发的一款开放世界动作冒险游戏，故事背景设定在虚构的 Vice City（基于迈阿密），这是系列史上首次同时拥有男女双主角。游戏将带来前所未有的细节和动态世界。',
+'/game-assets/cyberpunk-2077/cover.jpg',
+'/game-assets/cyberpunk-2077/banner.jpg',
+'["/game-assets/cyberpunk-2077/screenshots/1.jpg", "/game-assets/cyberpunk-2077/screenshots/2.jpg"]',
+398.00, 358.00, 10, 'Rockstar Games', 'Rockstar Games', '2026-10-27',
+'{"os": "Windows 11", "cpu": "Intel Core i7-8700K", "memory": "16 GB RAM", "gpu": "NVIDIA GeForce RTX 2060", "storage": "150 GB SSD"}',
+'{"os": "Windows 11", "cpu": "Intel Core i7-12700K", "memory": "32 GB RAM", "gpu": "NVIDIA GeForce RTX 4070", "storage": "200 GB NVMe SSD"}',
+'["开放世界", "动作", "犯罪", "剧情丰富", "多人"]',
+9999, 5600, 0.0, 0, 1,
+'PREORDER', NULL, 0.00, 0, '2026-10-27 00:00:00'),
+
+('星空之海', '一款来自独立开发者的太空题材RPG，正在众筹中。', '《星空之海》是一款深度太空探索角色扮演游戏。玩家将驾驶自己的星舰，在浩瀚银河系中探索未知星系、发现古老文明遗迹、与外星种族建立外交或发起战争。我们承诺：完全可破坏的星球环境、100+ 小时主线剧情、动态派系系统。',
+'/game-assets/elden-ring/cover.jpg',
+'/game-assets/elden-ring/banner.jpg',
+'["/game-assets/elden-ring/screenshots/1.jpg", "/game-assets/elden-ring/screenshots/2.jpg"]',
+198.00, 148.00, 25, 'Nebula Studio', 'Indie Publishing', '2027-03-15',
+'{"os": "Windows 10", "cpu": "Intel Core i5-8400", "memory": "12 GB RAM", "gpu": "NVIDIA GeForce GTX 1060", "storage": "80 GB"}',
+'{"os": "Windows 11", "cpu": "Intel Core i7-10700", "memory": "24 GB RAM", "gpu": "NVIDIA GeForce RTX 3070", "storage": "120 GB SSD"}',
+'["太空", "RPG", "探索", "独立", "科幻"]',
+9999, 2300, 0.0, 0, 0,
+'CROWDFUNDING', 500000.00, 386500.00, 2340, '2027-03-15 10:00:00'),
+
+('赛博朋克：幻影自由', '《赛博朋克2077》全新大型资料片，谍战悬疑全新体验。', '《赛博朋克：幻影自由》是《赛博朋克2077》的全新资料片，带来全新的谍战剧情、新的能力系统、以及夜之城全新开放区域——太平洲狗镇。你将化身联邦特工，执行一项惊天动地的营救任务。',
+'/game-assets/hogwarts-legacy/cover.jpg',
+'/game-assets/hogwarts-legacy/banner.jpg',
+'["/game-assets/hogwarts-legacy/screenshots/1.jpg", "/game-assets/hogwarts-legacy/screenshots/2.jpg"]',
+148.00, 128.00, 14, 'CD PROJEKT RED', 'CD PROJEKT RED', '2026-09-26',
+'{"os": "Windows 10", "cpu": "Intel Core i5-12400", "memory": "16 GB RAM", "gpu": "NVIDIA GeForce RTX 2060 Super", "storage": "100 GB SSD"}',
+'{"os": "Windows 11", "cpu": "Intel Core i7-13700K", "memory": "32 GB RAM", "gpu": "NVIDIA GeForce RTX 4080", "storage": "150 GB NVMe SSD"}',
+'["赛博朋克", "RPG", "DLC", "谍战", "开放世界"]',
+9999, 1800, 0.0, 0, 0,
+'PREORDER', NULL, 0.00, 0, '2026-09-26 00:00:00');

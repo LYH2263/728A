@@ -26,6 +26,12 @@ const userRoutes: RouteRecordRaw[] = [
     meta: { title: '我的游戏', requiresAuth: true }
   },
   {
+    path: '/preorders',
+    name: 'Preorders',
+    component: () => import('@/views/Preorders.vue'),
+    meta: { title: '预购库', requiresAuth: true }
+  },
+  {
     path: '/wishlist',
     name: 'Wishlist',
     component: () => import('@/views/Wishlist.vue'),

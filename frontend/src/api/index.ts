@@ -198,6 +198,14 @@ export const activityApi = {
     api.get('/activities/mine', { params: { page, size } })
 }
 
+// 预购相关
+export const preorderApi = {
+  getMyPreorders: () => api.get('/preorders'),
+  getPreorderCount: () => api.get('/preorders/count'),
+  checkPreordered: (gameId: number) => api.get(`/preorders/check/${gameId}`),
+  getPreorderSummary: () => api.get('/preorders/summary')
+}
+
 // 管理员 - 游戏管理
 export const adminGameApi = {
   getGames: (params: Record<string, any>) =>

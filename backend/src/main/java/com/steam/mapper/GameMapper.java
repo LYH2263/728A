@@ -91,4 +91,19 @@ public interface GameMapper {
 
     @Select("SELECT COUNT(*) FROM games WHERE stock < #{threshold}")
     int countLowStock(@Param("threshold") Integer threshold);
+
+    @Update("UPDATE games SET current_funding = current_funding + #{amount}, " +
+            "supporter_count = supporter_count + 1 WHERE id = #{gameId}")
+    int increaseCrowdfunding(@Param("gameId") Long gameId, @Param("amount") java.math.BigDecimal amount);
+
+    @Update("UPDATE games SET release_status = 'RELEASED' " +
+            "WHERE id = #{gameId} AND release_status = 'CROWDFUNDING' " +
+            "AND current_funding >= crowdfunding_goal")
+    int markCrowdfundingSuccessIfGoalReached(Long gameId);
+
+    @Update("UPDATE games SET release_status = #{releaseStatus} WHERE id = #{id}")
+    int updateReleaseStatus(@Param("id") Long id, @Param("releaseStatus") String releaseStatus);
+
+    @Select("SELECT * FROM games WHERE id = #{id}")
+    Game findRawById(Long id);
 }

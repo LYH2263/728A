@@ -25,6 +25,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final PreorderService preorderService;
     
     /**
      * 用户登录
@@ -39,6 +40,16 @@ public class UserService {
         }
         if (user.getStatus() == 0) {
             throw new RuntimeException("账号已被禁用");
+        }
+        
+        // 登录时惰性检查：将已到期的预购自动转正
+        try {
+            int converted = preorderService.processDuePreordersForUser(user.getId());
+            if (converted > 0) {
+                log.info("登录触发预购转正: userId={}, converted={}", user.getId(), converted);
+            }
+        } catch (Exception e) {
+            log.error("登录时预购转正检查失败: userId={}", user.getId(), e);
         }
         
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());

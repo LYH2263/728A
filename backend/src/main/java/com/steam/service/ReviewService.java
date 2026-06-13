@@ -1,6 +1,7 @@
 package com.steam.service;
 
 import com.steam.dto.PageResult;
+import com.steam.entity.Game;
 import com.steam.entity.GameReview;
 import com.steam.mapper.GameMapper;
 import com.steam.mapper.GameReviewMapper;
@@ -48,7 +49,17 @@ public class ReviewService {
         if (!userLibraryMapper.existsByUserIdAndGameId(userId, gameId)) {
             throw new RuntimeException("您需要购买游戏后才能发表评论");
         }
-        
+
+        // 检查游戏是否已发售（未发售的预购/众筹游戏不允许评论）
+        Game game = gameMapper.findRawById(gameId);
+        if (game == null) {
+            throw new RuntimeException("游戏不存在");
+        }
+        String releaseStatus = game.getReleaseStatus() == null ? "RELEASED" : game.getReleaseStatus();
+        if (!"RELEASED".equals(releaseStatus)) {
+            throw new RuntimeException("游戏尚未正式发售，暂不能发表评论");
+        }
+
         // 检查是否已评论
         GameReview existReview = reviewMapper.findByUserIdAndGameId(userId, gameId);
         if (existReview != null) {

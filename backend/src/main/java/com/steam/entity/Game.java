@@ -36,4 +36,14 @@ public class Game {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private transient Boolean lowStock;
+
+    private String releaseStatus;  // RELEASED / PREORDER / CROWDFUNDING
+    private BigDecimal crowdfundingGoal;
+    private BigDecimal currentFunding;
+    private Integer supporterCount;
+    private LocalDateTime preorderUnlockDate;
+
+    public BigDecimal getDisplayPrice() {
+        return discountPrice != null ? discountPrice : originalPrice;
+    }
 }

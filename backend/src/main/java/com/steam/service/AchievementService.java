@@ -128,4 +128,18 @@ public class AchievementService {
 
         return unlocked;
     }
+
+    public List<UserAchievement> triggerLibraryUpdated(Long userId, Long gameId) {
+        AchievementEvent event = new AchievementEvent(AchievementEvent.LIBRARY_UPDATED, userId)
+                .put("gameId", gameId);
+        List<UserAchievement> unlocked = achievementEngine.processEvent(event);
+
+        try {
+            activityService.createAchievementActivity(userId, unlocked);
+        } catch (Exception e) {
+            log.error("创建成就动态失败: userId={}", userId, e);
+        }
+
+        return unlocked;
+    }
 }

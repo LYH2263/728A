@@ -57,6 +57,11 @@ export interface Game {
   status?: number
   isFeatured?: number
   lowStock?: boolean
+  releaseStatus?: 'RELEASED' | 'PREORDER' | 'CROWDFUNDING'
+  crowdfundingGoal?: number
+  currentFunding?: number
+  supporterCount?: number
+  preorderUnlockDate?: string
 }
 
 // 分类
@@ -290,4 +295,28 @@ export interface Activity {
   metadata?: string
   createdAt: string
   user?: User
+}
+
+// 用户预购记录
+export interface UserPreorder {
+  id: number
+  userId: number
+  gameId: number
+  orderId: number
+  orderItemId: number
+  pricePaid: number
+  releaseStatus: 'PREORDER' | 'CROWDFUNDING'
+  status: 'PENDING_RELEASE' | 'RELEASED' | 'CANCELLED'
+  convertedAt?: string
+  createdAt: string
+  updatedAt?: string
+  game: Game
+}
+
+// 预购汇总
+export interface PreorderSummary {
+  totalCount: number
+  pendingCount: number
+  releasedCount: number
+  totalPaid: number
 }

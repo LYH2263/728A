@@ -57,6 +57,13 @@
             <span class="stat-label">已拥有游戏</span>
           </div>
         </div>
+        <div class="stat-card preorder" @click="goToPreorders">
+          <el-icon :size="32" color="#e6a23c"><Clock /></el-icon>
+          <div class="stat-info">
+            <span class="stat-value">{{ preorderCount }}</span>
+            <span class="stat-label">预购中</span>
+          </div>
+        </div>
         <div class="stat-card" @click="goToCart">
           <el-icon :size="32" color="var(--steam-green)"><ShoppingCart /></el-icon>
           <div class="stat-info">
@@ -151,7 +158,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useCartStore } from '@/store/cart'
-import { libraryApi, wishlistApi, couponApi, achievementApi, refundApi } from '@/api'
+import { libraryApi, wishlistApi, couponApi, achievementApi, refundApi, preorderApi } from '@/api'
 import { ElMessage } from 'element-plus'
 import type { AchievementStats } from '@/types'
 
@@ -170,6 +177,7 @@ function getAvatarUrl(avatar: string | undefined): string {
 }
 
 const libraryCount = ref(0)
+const preorderCount = ref(0)
 const wishlistCount = ref(0)
 const couponCount = ref(0)
 const refundCount = ref(0)
@@ -205,6 +213,7 @@ onMounted(async () => {
   
   await Promise.all([
     fetchLibraryCount(),
+    fetchPreorderCount(),
     fetchWishlistCount(),
     fetchCouponCount(),
     fetchAchievementStats(),
@@ -218,6 +227,15 @@ async function fetchLibraryCount() {
     libraryCount.value = res.data.data || 0
   } catch (error) {
     libraryCount.value = 0
+  }
+}
+
+async function fetchPreorderCount() {
+  try {
+    const res = await preorderApi.getPreorderCount()
+    preorderCount.value = res.data.data || 0
+  } catch (error) {
+    preorderCount.value = 0
   }
 }
 
@@ -259,6 +277,10 @@ async function fetchRefundCount() {
 
 function goToLibrary() {
   router.push('/library')
+}
+
+function goToPreorders() {
+  router.push('/preorders')
 }
 
 function goToCart() {

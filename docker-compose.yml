@@ -22,7 +22,8 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123456"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 300s
     networks:
       - steam-network
 

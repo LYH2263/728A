@@ -167,10 +167,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, ArrowDown } from '@element-plus/icons-vue'
 import { friendApi } from '@/api'
 import type { Friendship, User, PageResult } from '@/types'
-import { useUserStore } from '@/store/user'
 
 const router = useRouter()
-const userStore = useUserStore()
 
 const activeTab = ref('friends')
 const friends = ref<Friendship[]>([])

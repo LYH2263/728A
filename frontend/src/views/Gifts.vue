@@ -363,7 +363,7 @@ async function handleReject(gift: Gift) {
   }
 }
 
-function goToGame(gameId: number) {
+function goToGame(_gameId: number) {
   router.push('/library')
 }
 

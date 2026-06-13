@@ -91,10 +91,6 @@
 import { ref, onMounted } from 'vue'
 import { couponApi } from '@/api'
 import type { UserCoupon } from '@/types'
-import { useUserStore } from '@/store/user'
-import { ElMessage } from 'element-plus'
-
-const userStore = useUserStore()
 
 const activeTab = ref('UNUSED')
 const loading = ref(true)

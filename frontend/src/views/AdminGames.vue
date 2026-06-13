@@ -156,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Warning } from '@element-plus/icons-vue'
 import { adminGameApi } from '@/api'

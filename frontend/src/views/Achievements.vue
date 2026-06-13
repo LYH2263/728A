@@ -165,14 +165,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
 import { achievementApi } from '@/api'
 import type { UserAchievement, AchievementStats } from '@/types'
 import { ElMessage } from 'element-plus'
 import { Trophy, Star, Medal, Clock } from '@element-plus/icons-vue'
-
-const router = useRouter()
 
 const achievements = ref<UserAchievement[]>([])
 const stats = ref<AchievementStats>({
@@ -310,7 +307,6 @@ async function fetchAchievements() {
 }
 
 function checkNewUnlocks() {
-  const recentKey = `recent_unlocked_${Date.now()}`
   const lastChecked = localStorage.getItem('achievement_last_check')
   const now = Date.now()
 

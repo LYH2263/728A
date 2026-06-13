@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS `user_coupons` (
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`coupon_id`) REFERENCES `coupons`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE SET NULL,
+    -- order_id 的外键在 orders 表创建后通过 ALTER TABLE 添加(解决循环依赖)
     INDEX `idx_user_id` (`user_id`),
     INDEX `idx_coupon_id` (`coupon_id`),
     INDEX `idx_user_coupon` (`user_id`, `coupon_id`),
@@ -169,6 +169,11 @@ CREATE TABLE IF NOT EXISTS `orders` (
     INDEX `idx_user_coupon_id` (`user_coupon_id`),
     INDEX `idx_recipient_id` (`recipient_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单表';
+
+-- orders 表创建后, 补上 user_coupons.order_id 的外键(解决与 orders 的循环依赖)
+ALTER TABLE `user_coupons`
+    ADD CONSTRAINT `fk_user_coupons_order`
+    FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE SET NULL;
 
 -- 订单明细表
 CREATE TABLE IF NOT EXISTS `order_items` (

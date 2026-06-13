@@ -358,3 +358,26 @@ export interface WalletOverview {
   monthlySummary: WalletMonthlySummary
   trendData: WalletTrendItem[]
 }
+
+// 礼物
+export interface Gift {
+  id: number
+  giftNo: string
+  senderId: number
+  recipientId: number
+  gameId: number
+  gameTitle: string
+  gameCover?: string
+  orderId: number
+  orderItemId: number
+  pricePaid: number
+  status: 'PENDING' | 'CLAIMED' | 'REJECTED'
+  message?: string
+  claimedAt?: string
+  rejectedAt?: string
+  createdAt: string
+  updatedAt?: string
+  sender?: User
+  recipient?: User
+  game?: Game
+}

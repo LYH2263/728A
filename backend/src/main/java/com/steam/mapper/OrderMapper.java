@@ -20,8 +20,8 @@ public interface OrderMapper {
     @Select("SELECT * FROM orders WHERE user_id = #{userId} AND status = #{status} ORDER BY created_at DESC")
     List<Order> findByUserIdAndStatus(@Param("userId") Long userId, @Param("status") String status);
 
-    @Insert("INSERT INTO orders (order_no, user_id, user_coupon_id, total_amount, pay_amount, discount_amount, coupon_discount, status) " +
-            "VALUES (#{orderNo}, #{userId}, #{userCouponId}, #{totalAmount}, #{payAmount}, #{discountAmount}, #{couponDiscount}, #{status})")
+    @Insert("INSERT INTO orders (order_no, user_id, user_coupon_id, recipient_id, gift_message, total_amount, pay_amount, discount_amount, coupon_discount, status) " +
+            "VALUES (#{orderNo}, #{userId}, #{userCouponId}, #{recipientId}, #{giftMessage}, #{totalAmount}, #{payAmount}, #{discountAmount}, #{couponDiscount}, #{status})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Order order);
 

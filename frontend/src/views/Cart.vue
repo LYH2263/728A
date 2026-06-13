@@ -42,6 +42,75 @@
         <div class="checkout-card">
           <h3>订单摘要</h3>
 
+          <div class="gift-section">
+            <div class="gift-toggle-row">
+              <span class="gift-label">
+                <el-icon><Present /></el-icon>
+                作为礼物赠送
+              </span>
+              <el-switch
+                v-model="isGift"
+                :disabled="!canGift"
+                active-color="#67c23a"
+              />
+            </div>
+            <el-tooltip
+              v-if="!canGift"
+              content="赠送礼物每次只能选择一款游戏"
+              placement="top"
+            >
+              <div class="gift-tip">请先移除多余商品，仅保留一款游戏即可赠送</div>
+            </el-tooltip>
+
+            <div v-if="isGift" class="gift-form">
+              <el-form-item label="收礼好友" required>
+                <el-select
+                  v-model="selectedRecipientId"
+                  placeholder="请选择收礼好友"
+                  style="width: 100%"
+                  :disabled="friendsList.length === 0"
+                >
+                  <el-option
+                    v-for="f in friendsList"
+                    :key="f.friendId"
+                    :value="f.friendId"
+                  >
+                    <div class="friend-option">
+                      <el-avatar :src="f.friendUser?.avatar" size="small" />
+                      <span>{{ f.friendUser?.nickname || f.friendUser?.username }}</span>
+                    </div>
+                  </el-option>
+                </el-select>
+                <router-link
+                  v-if="friendsList.length === 0"
+                  to="/friends"
+                  class="no-friends-tip"
+                >
+                  还没有好友？去添加好友 →
+                </router-link>
+              </el-form-item>
+              <el-form-item label="赠言">
+                <el-input
+                  v-model="giftMessage"
+                  type="textarea"
+                  :rows="2"
+                  maxlength="200"
+                  show-word-limit
+                  placeholder="写一句赠言送给TA（可选）"
+                />
+              </el-form-item>
+              <el-alert
+                type="info"
+                :closable="false"
+                show-icon
+                title="游戏将作为礼物发送给好友"
+                description="支付成功后，您的好友可在「礼物中心」领取或拒绝，若被拒绝，款项将自动退回您的余额。"
+              />
+            </div>
+          </div>
+
+          <el-divider />
+
           <div class="coupon-section">
             <div class="coupon-label">
               <span>优惠券</span>
@@ -117,8 +186,23 @@
       </el-empty>
     </template>
 
-    <el-dialog v-model="showCheckout" title="确认订单" width="500px" class="checkout-dialog-wrapper">
+    <el-dialog v-model="showCheckout" :title="isGift ? '确认赠送礼物' : '确认订单'" width="500px" class="checkout-dialog-wrapper">
       <div class="checkout-dialog">
+        <div v-if="isGift" class="gift-info-dialog">
+          <el-alert type="success" :closable="false" show-icon>
+            <template #title>🎁 您正在赠送礼物给</template>
+            <div class="recipient-info">
+              <el-avatar :src="getSelectedFriend()?.friendUser?.avatar" size="large" />
+              <div class="recipient-text">
+                <div class="recipient-name">
+                  {{ getSelectedFriend()?.friendUser?.nickname || getSelectedFriend()?.friendUser?.username }}
+                </div>
+                <div v-if="giftMessage" class="recipient-message">"{{ giftMessage }}"</div>
+              </div>
+            </div>
+          </el-alert>
+        </div>
+
         <div class="order-items">
           <div v-for="item in cartStore.items" :key="item.id" class="order-item">
             <img :src="item.game.coverImage" :alt="item.game.title" />
@@ -160,8 +244,9 @@
           type="primary"
           :loading="checkoutLoading"
           @click="confirmCheckout"
+          :disabled="isGift && !selectedRecipientId"
         >
-          确认支付
+          {{ isGift ? '确认赠送' : '确认支付' }}
         </el-button>
         <el-button v-else type="warning" @click="goToRecharge">去充值</el-button>
       </template>
@@ -174,8 +259,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/store/cart'
 import { useUserStore } from '@/store/user'
-import { orderApi, couponApi } from '@/api'
-import type { UserCoupon } from '@/types'
+import { orderApi, couponApi, friendApi } from '@/api'
+import type { UserCoupon, User } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
@@ -189,7 +274,15 @@ const applicableCoupons = ref<UserCoupon[]>([])
 const selectedCouponId = ref<number | null>(null)
 const couponDiscount = ref(0)
 
+const isGift = ref(false)
+const friendsList = ref<Array<{ friendUser: User; friendId: number }>>([])
+const selectedRecipientId = ref<number | null>(null)
+const giftMessage = ref('')
+
 const userBalance = computed(() => userStore.userInfo?.balance || 0)
+
+const isSingleItem = computed(() => cartStore.items.length === 1)
+const canGift = computed(() => isSingleItem.value)
 
 const selectedCoupon = computed(() => {
   if (!selectedCouponId.value) return null
@@ -202,9 +295,18 @@ const finalAmount = computed(() => {
 
 onMounted(async () => {
   await cartStore.fetchCart()
-  await loadApplicableCoupons()
+  await Promise.all([loadApplicableCoupons(), loadFriends()])
   loading.value = false
 })
+
+async function loadFriends() {
+  try {
+    const res = await friendApi.getFriends()
+    friendsList.value = res.data.data || []
+  } catch (e) {
+    friendsList.value = []
+  }
+}
 
 watch(
   () => cartStore.items.length,
@@ -326,23 +428,43 @@ async function handleClear() {
   }
 }
 
+function getSelectedFriend() {
+  if (!selectedRecipientId.value) return null
+  return friendsList.value.find(f => f.friendId === selectedRecipientId.value) || null
+}
+
 function handleCheckout() {
+  if (isGift.value && !selectedRecipientId.value) {
+    ElMessage.warning('请选择收礼好友')
+    return
+  }
   showCheckout.value = true
 }
 
 async function confirmCheckout() {
+  if (isGift.value && !selectedRecipientId.value) {
+    ElMessage.warning('请选择收礼好友')
+    return
+  }
   checkoutLoading.value = true
   try {
     const gameIds = cartStore.items.map(item => item.gameId)
     const res = await orderApi.createOrder({
       gameIds,
-      userCouponId: selectedCouponId.value || undefined
+      userCouponId: selectedCouponId.value || undefined,
+      recipientId: isGift.value ? selectedRecipientId.value || undefined : undefined,
+      giftMessage: isGift.value ? giftMessage.value || undefined : undefined
     })
     const order = res.data.data
 
-    const payRes = await orderApi.payOrder(order.orderNo)
+    await orderApi.payOrder(order.orderNo)
 
-    ElMessage.success('支付成功！游戏已添加到您的游戏库')
+    const wasGift = isGift.value
+    if (wasGift) {
+      ElMessage.success('赠送成功！好友可在「礼物中心」领取')
+    } else {
+      ElMessage.success('支付成功！游戏已添加到您的游戏库')
+    }
     showCheckout.value = false
 
     await Promise.all([
@@ -353,8 +475,15 @@ async function confirmCheckout() {
 
     selectedCouponId.value = null
     couponDiscount.value = 0
+    isGift.value = false
+    selectedRecipientId.value = null
+    giftMessage.value = ''
 
-    router.push('/library')
+    if (wasGift) {
+      router.push('/gifts')
+    } else {
+      router.push('/library')
+    }
   } catch (error) {
     // 错误已处理
   } finally {
@@ -544,6 +673,107 @@ function goToRecharge() {
   .coupon-option-desc {
     color: var(--steam-green);
     font-size: 12px;
+  }
+}
+
+// 礼物相关
+.gift-section {
+  margin-bottom: 16px;
+
+  .gift-toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .gift-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-white);
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .gift-tip {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 4px 0;
+  }
+
+  .gift-form {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(103, 194, 58, 0.05);
+    border: 1px solid rgba(103, 194, 58, 0.2);
+    border-radius: var(--radius-sm);
+
+    :deep(.el-form-item__label) {
+      color: var(--text-primary);
+    }
+
+    :deep(.el-select__wrapper) {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    :deep(.el-textarea__inner) {
+      background: rgba(0, 0, 0, 0.2);
+      color: var(--text-primary);
+    }
+  }
+
+  .friend-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    span {
+      color: var(--text-white);
+    }
+  }
+
+  .no-friends-tip {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--steam-light-blue);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// 礼物对话框
+.gift-info-dialog {
+  margin-bottom: 16px;
+
+  .recipient-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .recipient-text {
+    flex: 1;
+  }
+
+  .recipient-name {
+    color: var(--text-white);
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  .recipient-message {
+    margin-top: 4px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-style: italic;
+    opacity: 0.9;
   }
 }
 

@@ -5,6 +5,7 @@ import com.steam.entity.Activity;
 import com.steam.entity.Achievement;
 import com.steam.entity.Game;
 import com.steam.entity.GameReview;
+import com.steam.entity.Gift;
 import com.steam.entity.Order;
 import com.steam.entity.OrderItem;
 import com.steam.entity.UserAchievement;
@@ -125,6 +126,22 @@ public class ActivityService {
             log.debug("创建评论动态: userId={}, reviewId={}", userId, reviewId);
         } catch (Exception e) {
             log.error("创建评论动态失败: userId={}, reviewId={}", userId, reviewId, e);
+        }
+    }
+
+    @Transactional
+    public void createGiftClaimActivity(Long userId, Gift gift) {
+        try {
+            Activity activity = new Activity();
+            activity.setUserId(userId);
+            activity.setType("PURCHASE");
+            activity.setGameId(gift.getGameId());
+            activity.setGameTitle(gift.getGameTitle());
+            activity.setGameCover(gift.getGameCover());
+            activityMapper.insert(activity);
+            log.debug("创建礼物领取动态: userId={}, gameId={}", userId, gift.getGameId());
+        } catch (Exception e) {
+            log.error("创建礼物领取动态失败: userId={}, giftId={}", userId, gift.getId(), e);
         }
     }
 }

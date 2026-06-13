@@ -142,4 +142,8 @@ public class AchievementService {
 
         return unlocked;
     }
+
+    public List<UserAchievement> triggerLibraryUpdated(Long userId) {
+        return triggerLibraryUpdated(userId, null);
+    }
 }

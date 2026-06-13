@@ -14,6 +14,8 @@ public class Order {
     private String orderNo;
     private Long userId;
     private Long userCouponId;
+    private Long recipientId;
+    private String giftMessage;
     private BigDecimal totalAmount;
     private BigDecimal discountAmount;
     private BigDecimal couponDiscount;
@@ -22,7 +24,8 @@ public class Order {
     private LocalDateTime payTime;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
     private List<OrderItem> orderItems;
     private UserCoupon userCoupon;
+    private User recipient;
 }

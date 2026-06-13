@@ -111,15 +111,6 @@ export const wishlistApi = {
   checkWishlist: (gameId: number) => api.get(`/wishlist/check/${gameId}`)
 }
 
-// 订单相关
-export const orderApi = {
-  createOrder: (data: { gameIds: number[]; userCouponId?: number }) => api.post('/orders', data),
-  payOrder: (orderNo: string) => api.post(`/orders/${orderNo}/pay`),
-  cancelOrder: (orderNo: string) => api.post(`/orders/${orderNo}/cancel`),
-  getOrders: () => api.get('/orders'),
-  getOrderDetail: (orderNo: string) => api.get(`/orders/${orderNo}`)
-}
-
 // 优惠券相关
 export const couponApi = {
   claimCoupon: (code: string) => api.post('/coupons/claim', { code }),
@@ -227,4 +218,26 @@ export const walletApi = {
   getMonthlySummary: (month?: string) =>
     api.get('/wallet/summary', { params: month ? { month } : {} }),
   getTrendData: () => api.get('/wallet/trend')
+}
+
+// 订单相关（支持赠送）
+export const orderApi = {
+  createOrder: (data: { gameIds: number[]; userCouponId?: number; recipientId?: number; giftMessage?: string }) =>
+    api.post('/orders', data),
+  payOrder: (orderNo: string) => api.post(`/orders/${orderNo}/pay`),
+  cancelOrder: (orderNo: string) => api.post(`/orders/${orderNo}/cancel`),
+  getOrders: () => api.get('/orders'),
+  getOrderDetail: (orderNo: string) => api.get(`/orders/${orderNo}`)
+}
+
+// 礼物相关
+export const giftApi = {
+  getReceivedGifts: (status?: string) =>
+    api.get('/gifts/received', { params: status ? { status } : {} }),
+  getSentGifts: (status?: string) =>
+    api.get('/gifts/sent', { params: status ? { status } : {} }),
+  getPendingCount: () => api.get('/gifts/pending/count'),
+  getGiftDetail: (giftId: number) => api.get(`/gifts/${giftId}`),
+  claimGift: (giftId: number) => api.post(`/gifts/${giftId}/claim`),
+  rejectGift: (giftId: number) => api.post(`/gifts/${giftId}/reject`)
 }

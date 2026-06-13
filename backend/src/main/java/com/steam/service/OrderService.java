@@ -30,9 +30,11 @@ public class OrderService {
     private final ActivityService activityService;
     private final UserPreorderMapper userPreorderMapper;
     private final WalletService walletService;
+    private final GiftService giftService;
 
     @Transactional
-    public Order createOrder(Long userId, List<Long> gameIds, Long userCouponId) {
+    public Order createOrder(Long userId, List<Long> gameIds, Long userCouponId,
+                             Long recipientId, String giftMessage) {
         if (gameIds == null || gameIds.isEmpty()) {
             throw new RuntimeException("请选择要购买的游戏");
         }
@@ -42,17 +44,41 @@ public class OrderService {
             throw new RuntimeException("用户不存在");
         }
 
+        boolean isGift = recipientId != null;
+        Long targetUserId = isGift ? recipientId : userId;
+
+        if (isGift) {
+            if (userId.equals(recipientId)) {
+                throw new RuntimeException("不能赠送给自己");
+            }
+            User recipient = userMapper.findById(recipientId);
+            if (recipient == null) {
+                throw new RuntimeException("收礼用户不存在");
+            }
+            if (gameIds.size() > 1) {
+                throw new RuntimeException("赠送礼物每次只能赠送一款游戏");
+            }
+        }
+
         List<Game> games = new ArrayList<>();
         for (Long gameId : gameIds) {
             Game game = gameMapper.findById(gameId);
             if (game == null) {
                 throw new RuntimeException("游戏不存在: " + gameId);
             }
-            if (userLibraryMapper.existsByUserIdAndGameId(userId, gameId)) {
-                throw new RuntimeException("您已拥有游戏: " + game.getTitle());
+            if (userLibraryMapper.existsByUserIdAndGameId(targetUserId, gameId)) {
+                if (isGift) {
+                    throw new RuntimeException("收礼用户已拥有游戏: " + game.getTitle());
+                } else {
+                    throw new RuntimeException("您已拥有游戏: " + game.getTitle());
+                }
             }
-            if (userPreorderMapper.existsPendingByUserIdAndGameId(userId, gameId)) {
-                throw new RuntimeException("您已预购游戏: " + game.getTitle());
+            if (userPreorderMapper.existsPendingByUserIdAndGameId(targetUserId, gameId)) {
+                if (isGift) {
+                    throw new RuntimeException("收礼用户已预购游戏: " + game.getTitle());
+                } else {
+                    throw new RuntimeException("您已预购游戏: " + game.getTitle());
+                }
             }
             if (game.getStock() <= 0) {
                 throw new RuntimeException("游戏库存不足: " + game.getTitle());
@@ -118,6 +144,8 @@ public class OrderService {
         Order order = new Order();
         order.setOrderNo(orderNo);
         order.setUserId(userId);
+        order.setRecipientId(recipientId);
+        order.setGiftMessage(giftMessage);
         order.setTotalAmount(originalTotal);
         order.setDiscountAmount(totalDiscount);
         order.setCouponDiscount(couponDiscount);
@@ -225,7 +253,12 @@ public class OrderService {
             throw new RuntimeException("余额不足，请先充值");
         }
 
-        walletService.purchase(userId, finalPayAmount, orderNo, "购买游戏，订单号: " + orderNo);
+        boolean isGift = order.getRecipientId() != null;
+        Long recipientId = order.getRecipientId();
+        String giftMessage = order.getGiftMessage();
+
+        walletService.purchase(userId, finalPayAmount, orderNo,
+                isGift ? "赠送游戏，订单号: " + orderNo : "购买游戏，订单号: " + orderNo);
 
         // 重查订单项以获得每个item的id
         List<OrderItem> finalOrderItems = orderMapper.findOrderItemsByOrderId(order.getId());
@@ -239,28 +272,40 @@ public class OrderService {
             Game game = gameMapper.findRawById(item.getGameId());
             String releaseStatus = game.getReleaseStatus() == null ? "RELEASED" : game.getReleaseStatus();
 
-            if ("RELEASED".equals(releaseStatus)) {
-                // 已发售：直接进入游戏库
-                UserLibrary library = new UserLibrary();
-                library.setUserId(userId);
-                library.setGameId(item.getGameId());
-                library.setOrderId(order.getId());
-                userLibraryMapper.insert(library);
-            } else {
-                // 预购/众筹：进入预购库
-                UserPreorder preorder = new UserPreorder();
-                preorder.setUserId(userId);
-                preorder.setGameId(item.getGameId());
-                preorder.setOrderId(order.getId());
-                preorder.setOrderItemId(item.getId());
-                preorder.setPricePaid(item.getPrice());
-                preorder.setReleaseStatus(releaseStatus);
-                userPreorderMapper.insert(preorder);
+            if (isGift) {
+                if (userLibraryMapper.existsByUserIdAndGameId(recipientId, item.getGameId())) {
+                    throw new RuntimeException("收礼用户已拥有游戏: " + item.getGameTitle());
+                }
+                if (userPreorderMapper.existsPendingByUserIdAndGameId(recipientId, item.getGameId())) {
+                    throw new RuntimeException("收礼用户已预购游戏: " + item.getGameTitle());
+                }
+                giftService.createGift(userId, recipientId, item, order.getId(), giftMessage);
 
-                // 众筹：累加募集进度
                 if ("CROWDFUNDING".equals(releaseStatus)) {
                     gameMapper.increaseCrowdfunding(item.getGameId(), item.getPrice());
                     gameMapper.markCrowdfundingSuccessIfGoalReached(item.getGameId());
+                }
+            } else {
+                if ("RELEASED".equals(releaseStatus)) {
+                    UserLibrary library = new UserLibrary();
+                    library.setUserId(userId);
+                    library.setGameId(item.getGameId());
+                    library.setOrderId(order.getId());
+                    userLibraryMapper.insert(library);
+                } else {
+                    UserPreorder preorder = new UserPreorder();
+                    preorder.setUserId(userId);
+                    preorder.setGameId(item.getGameId());
+                    preorder.setOrderId(order.getId());
+                    preorder.setOrderItemId(item.getId());
+                    preorder.setPricePaid(item.getPrice());
+                    preorder.setReleaseStatus(releaseStatus);
+                    userPreorderMapper.insert(preorder);
+
+                    if ("CROWDFUNDING".equals(releaseStatus)) {
+                        gameMapper.increaseCrowdfunding(item.getGameId(), item.getPrice());
+                        gameMapper.markCrowdfundingSuccessIfGoalReached(item.getGameId());
+                    }
                 }
             }
 

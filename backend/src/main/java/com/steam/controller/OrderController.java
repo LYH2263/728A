@@ -28,7 +28,8 @@ public class OrderController {
     @PostMapping
     public Result<Order> createOrder(HttpServletRequest request, @Valid @RequestBody CreateOrderDTO dto) {
         Long userId = (Long) request.getAttribute("userId");
-        Order order = orderService.createOrder(userId, dto.getGameIds(), dto.getUserCouponId());
+        Order order = orderService.createOrder(userId, dto.getGameIds(), dto.getUserCouponId(),
+                dto.getRecipientId(), dto.getGiftMessage());
         return Result.success("订单创建成功", order);
     }
     

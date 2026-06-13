@@ -150,6 +150,8 @@ CREATE TABLE IF NOT EXISTS `orders` (
     `order_no` VARCHAR(50) NOT NULL UNIQUE COMMENT '订单号',
     `user_id` BIGINT NOT NULL,
     `user_coupon_id` BIGINT COMMENT '使用的用户优惠券ID',
+    `recipient_id` BIGINT COMMENT '收礼人用户ID(赠送时不为空)',
+    `gift_message` VARCHAR(500) COMMENT '赠言(赠送时填写)',
     `total_amount` DECIMAL(10,2) NOT NULL COMMENT '订单总金额(商品原价合计)',
     `discount_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '总优惠金额(折扣+优惠券)',
     `coupon_discount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '优惠券抵扣金额',
@@ -160,10 +162,12 @@ CREATE TABLE IF NOT EXISTS `orders` (
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`),
     FOREIGN KEY (`user_coupon_id`) REFERENCES `user_coupons`(`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`recipient_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
     INDEX `idx_order_no` (`order_no`),
     INDEX `idx_user_id` (`user_id`),
     INDEX `idx_status` (`status`),
-    INDEX `idx_user_coupon_id` (`user_coupon_id`)
+    INDEX `idx_user_coupon_id` (`user_coupon_id`),
+    INDEX `idx_recipient_id` (`recipient_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单表';
 
 -- 订单明细表
@@ -603,6 +607,36 @@ INSERT INTO `games` (`title`, `description`, `detail_description`, `cover_image`
 '["赛博朋克", "RPG", "DLC", "谍战", "开放世界"]',
 9999, 1800, 0.0, 0, 0,
 'PREORDER', NULL, 0.00, 0, '2026-09-26 00:00:00');
+
+-- ===================== 礼物系统 =====================
+
+CREATE TABLE IF NOT EXISTS `gifts` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `gift_no` VARCHAR(50) NOT NULL UNIQUE COMMENT '礼物编号',
+    `sender_id` BIGINT NOT NULL COMMENT '赠送者用户ID',
+    `recipient_id` BIGINT NOT NULL COMMENT '收礼人用户ID',
+    `game_id` BIGINT NOT NULL COMMENT '游戏ID',
+    `game_title` VARCHAR(200) NOT NULL COMMENT '游戏名称(冗余)',
+    `game_cover` VARCHAR(500) COMMENT '游戏封面(冗余)',
+    `order_id` BIGINT NOT NULL COMMENT '关联订单ID',
+    `order_item_id` BIGINT NOT NULL COMMENT '关联订单项ID',
+    `price_paid` DECIMAL(10,2) NOT NULL COMMENT '购买价格',
+    `status` ENUM('PENDING', 'CLAIMED', 'REJECTED') DEFAULT 'PENDING' COMMENT '状态: PENDING待领取, CLAIMED已领取, REJECTED已拒绝',
+    `message` VARCHAR(500) COMMENT '赠言',
+    `claimed_at` DATETIME COMMENT '领取时间',
+    `rejected_at` DATETIME COMMENT '拒绝时间',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`recipient_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`game_id`) REFERENCES `games`(`id`),
+    FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`order_item_id`) REFERENCES `order_items`(`id`) ON DELETE CASCADE,
+    INDEX `idx_sender_id` (`sender_id`),
+    INDEX `idx_recipient_id` (`recipient_id`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='礼物表';
 
 -- ===================== 钱包流水系统 =====================
 

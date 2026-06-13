@@ -27,18 +27,21 @@
           </div>
           
           <div class="order-items">
-            <div v-for="item in order.orderItems" :key="item.id" class="order-item">
+            <div v-for="item in order.orderItems" :key="item.id" class="order-item" :class="{ refunded: getItemRefundStatus(item) === 'REFUNDED' }">
               <img :src="item.gameCover" :alt="item.gameTitle" @click="goToGame(item.gameId)" />
               <div class="item-info" @click="goToGame(item.gameId)">
                 <h4>{{ item.gameTitle }}</h4>
                 <span class="price">¥{{ item.price.toFixed(2) }}</span>
               </div>
               <div class="item-actions">
+                <el-tag v-if="getItemRefundStatus(item) === 'REFUNDED'" type="success" size="small">已退款</el-tag>
+                <el-tag v-else-if="getItemRefundStatus(item) === 'PENDING'" type="warning" size="small">退款审核中</el-tag>
+                <el-tag v-else-if="getItemRefundStatus(item) === 'APPROVED'" type="primary" size="small">退款处理中</el-tag>
                 <el-button
-                  v-if="canApplyRefund(order, item)"
+                  v-else-if="canApplyRefund(order, item)"
                   type="warning"
                   size="small"
-                  :loading="checkingRefund[item.id] || refundLoading === item.id"
+                  :loading="checkingRefund[item.id]"
                   @click.stop="openRefundDialog(order, item)"
                 >
                   申请退款
@@ -152,7 +155,7 @@ const loading = ref(true)
 const orders = ref<Order[]>([])
 const expandedOrders = ref<number[]>([])
 const checkingRefund = reactive<Record<number, boolean>>({})
-const refundLoading = ref<number | null>(null)
+const itemRefundStatuses = reactive<Record<number, string | null>>({})
 
 const refundDialogVisible = ref(false)
 const submittingRefund = ref(false)
@@ -190,17 +193,25 @@ async function checkRefundEligibilityForAll() {
         checkingRefund[item.id] = true
         try {
           const res = await refundApi.checkEligibility(item.id)
-          ;(item as any).refundable = res.data.data?.eligible === true
+          const data = res.data.data
+          itemRefundStatuses[item.id] = data?.refundStatus ?? null
+          ;(item as any).refundable = data?.eligible === true
         } catch {
+          itemRefundStatuses[item.id] = null
           ;(item as any).refundable = false
         } finally {
           checkingRefund[item.id] = false
         }
       } else {
+        itemRefundStatuses[item.id] = null
         ;(item as any).refundable = false
       }
     }
   }
+}
+
+function getItemRefundStatus(item: OrderItem): string | null {
+  return itemRefundStatuses[item.id] ?? null
 }
 
 function canRefundStatus(status: string) {
@@ -209,6 +220,9 @@ function canRefundStatus(status: string) {
 
 function canApplyRefund(order: Order, item: OrderItem) {
   if (!canRefundStatus(order.status)) return false
+  if (getItemRefundStatus(item) === 'REFUNDED') return false
+  if (getItemRefundStatus(item) === 'PENDING') return false
+  if (getItemRefundStatus(item) === 'APPROVED') return false
   if ((item as any).refundable === true) return true
   return false
 }
@@ -429,6 +443,19 @@ async function submitRefund() {
     border-bottom: 1px solid var(--border-color);
   }
 
+  &.refunded {
+    opacity: 0.55;
+
+    .item-info h4 {
+      text-decoration: line-through;
+      color: var(--text-secondary);
+    }
+
+    .price {
+      text-decoration: line-through;
+    }
+  }
+
   img {
     width: 80px;
     height: 37px;
@@ -460,6 +487,8 @@ async function submitRefund() {
 
   .item-actions {
     margin-left: 12px;
+    display: flex;
+    align-items: center;
   }
 }
 

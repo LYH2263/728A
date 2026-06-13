@@ -75,8 +75,9 @@ public class RefundService {
 
     public void checkRefundEligibility(Order order, OrderItem orderItem, Long userId) {
         String orderStatus = order.getStatus();
-        if (!"PAID".equals(orderStatus) && !"COMPLETED".equals(orderStatus)) {
-            throw new RuntimeException("仅已支付或已完成的订单可申请退款");
+        if (!"PAID".equals(orderStatus) && !"COMPLETED".equals(orderStatus)
+                && !"PARTIAL_REFUND".equals(orderStatus)) {
+            throw new RuntimeException("当前订单状态不可申请退款");
         }
 
         if (orderItem.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
@@ -114,6 +115,12 @@ public class RefundService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public String getItemRefundStatus(Long orderItemId) {
+        RefundRequest active = refundRequestMapper.findActiveByOrderItemId(orderItemId);
+        if (active == null) return null;
+        return active.getStatus();
     }
 
     @Transactional
@@ -209,16 +216,19 @@ public class RefundService {
         if (orderItems == null || orderItems.isEmpty()) return;
 
         int refundedCount = 0;
+        int activeCount = 0;
         for (OrderItem item : orderItems) {
-            int active = refundRequestMapper.countActiveByOrderItemId(item.getId());
-            if (active > 0) {
+            if (refundRequestMapper.countRefundedByOrderItemId(item.getId()) > 0) {
                 refundedCount++;
+                activeCount++;
+            } else if (refundRequestMapper.countActiveByOrderItemId(item.getId()) > 0) {
+                activeCount++;
             }
         }
 
         if (refundedCount == orderItems.size()) {
             orderMapper.updateStatusOnly(orderId, "FULL_REFUND");
-        } else if (refundedCount > 0) {
+        } else if (activeCount > 0) {
             orderMapper.updateStatusOnly(orderId, "PARTIAL_REFUND");
         }
     }

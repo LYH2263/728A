@@ -53,4 +53,7 @@ public interface RefundRequestMapper {
 
     @Select("SELECT COUNT(*) FROM refund_requests WHERE order_item_id = #{orderItemId} AND status IN ('PENDING', 'APPROVED', 'REFUNDED')")
     int countActiveByOrderItemId(Long orderItemId);
+
+    @Select("SELECT COUNT(*) FROM refund_requests WHERE order_item_id = #{orderItemId} AND status = 'REFUNDED'")
+    int countRefundedByOrderItemId(Long orderItemId);
 }

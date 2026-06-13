@@ -31,7 +31,11 @@ public class RefundController {
     public Result<Map<String, Object>> checkEligibility(HttpServletRequest request, @PathVariable Long orderItemId) {
         Long userId = (Long) request.getAttribute("userId");
         boolean eligible = refundService.isRefundEligible(userId, orderItemId);
-        return Result.success(Map.of("eligible", eligible));
+        String refundStatus = refundService.getItemRefundStatus(orderItemId);
+        Map<String, Object> data = new java.util.HashMap<>();
+        data.put("eligible", eligible);
+        data.put("refundStatus", refundStatus);
+        return Result.success(data);
     }
 
     @GetMapping("/my")

@@ -1,15 +1,14 @@
 package com.steam.dto;
 
 import lombok.Data;
+import java.util.List;
 
-/**
- * 统一响应结果类
- */
 @Data
 public class Result<T> {
     private Integer code;
     private String message;
     private T data;
+    private List<UnlockedAchievementVO> unlockedAchievements;
 
     public static <T> Result<T> success() {
         Result<T> result = new Result<>();
@@ -39,6 +38,11 @@ public class Result<T> {
         result.setMessage(message);
         result.setData(data);
         return result;
+    }
+
+    public Result<T> withUnlockedAchievements(List<UnlockedAchievementVO> achievements) {
+        this.unlockedAchievements = achievements;
+        return this;
     }
 
     public static <T> Result<T> error(String message) {

@@ -1,5 +1,6 @@
 package com.steam.service;
 
+import com.steam.dto.UnlockedAchievementVO;
 import com.steam.entity.*;
 import com.steam.mapper.*;
 import lombok.RequiredArgsConstructor;
@@ -333,7 +334,8 @@ public class OrderService {
         log.info("订单支付成功: {}, 用户: {}, 实付: {}", orderNo, userId, finalPayAmount);
 
         try {
-            achievementService.triggerOrderPaid(userId, order.getId());
+            List<UserAchievement> unlocked = achievementService.triggerOrderPaid(userId, order.getId());
+            order.setUnlockedAchievements(achievementService.toVOList(unlocked));
         } catch (Exception e) {
             log.error("触发成就计算失败: orderId={}, userId={}", order.getId(), userId, e);
         }

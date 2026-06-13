@@ -3,6 +3,7 @@ export interface ApiResponse<T = any> {
   code: number
   message: string
   data: T
+  unlockedAchievements?: UnlockedAchievementVO[]
 }
 
 // 分页响应
@@ -265,6 +266,19 @@ export interface AchievementStats {
   unlockedCount: number
   totalPoints: number
   completionRate: number
+}
+
+// 解锁成就VO（后端接口返回的轻量对象）
+export interface UnlockedAchievementVO {
+  achievementId: number
+  code: string
+  name: string
+  description: string
+  icon?: string
+  category: string
+  rarity: number
+  points: number
+  unlockedAt?: string
 }
 
 // 好友关系

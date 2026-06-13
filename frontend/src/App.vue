@@ -9,12 +9,14 @@
       </router-view>
     </main>
     <AppFooter />
+    <AchievementCelebration />
   </div>
 </template>
 
 <script setup lang="ts">
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
+import AchievementCelebration from '@/components/AchievementCelebration.vue'
 </script>
 
 <style lang="scss">

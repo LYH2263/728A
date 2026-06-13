@@ -3,6 +3,7 @@ package com.steam.service;
 import com.steam.dto.PageResult;
 import com.steam.entity.Game;
 import com.steam.entity.GameReview;
+import com.steam.entity.UserAchievement;
 import com.steam.mapper.GameMapper;
 import com.steam.mapper.GameReviewMapper;
 import com.steam.mapper.UserLibraryMapper;
@@ -91,7 +92,8 @@ public class ReviewService {
         log.info("用户 {} 对游戏 {} 发表评论", userId, gameId);
 
         try {
-            achievementService.triggerReviewCreated(userId, review.getId());
+            List<UserAchievement> unlocked = achievementService.triggerReviewCreated(userId, review.getId());
+            review.setUnlockedAchievements(achievementService.toVOList(unlocked));
         } catch (Exception e) {
             log.error("触发成就计算失败: reviewId={}, userId={}", review.getId(), userId, e);
         }

@@ -1,13 +1,11 @@
 package com.steam.entity;
 
+import com.steam.dto.UnlockedAchievementVO;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 订单实体类
- */
 @Data
 public class Order {
     private Long id;
@@ -28,4 +26,5 @@ public class Order {
     private List<OrderItem> orderItems;
     private UserCoupon userCoupon;
     private User recipient;
+    private List<UnlockedAchievementVO> unlockedAchievements;
 }

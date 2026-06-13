@@ -2,6 +2,7 @@ package com.steam.service;
 
 import com.steam.achievement.AchievementEngine;
 import com.steam.achievement.AchievementEvent;
+import com.steam.dto.UnlockedAchievementVO;
 import com.steam.entity.Achievement;
 import com.steam.entity.UserAchievement;
 import com.steam.mapper.AchievementMapper;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,6 +22,8 @@ public class AchievementService {
     private final AchievementMapper achievementMapper;
     private final AchievementEngine achievementEngine;
     private final ActivityService activityService;
+
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public List<UserAchievement> getUserAchievements(Long userId) {
         List<Achievement> allAchievements = achievementMapper.findAllActive();
@@ -145,5 +149,26 @@ public class AchievementService {
 
     public List<UserAchievement> triggerLibraryUpdated(Long userId) {
         return triggerLibraryUpdated(userId, null);
+    }
+
+    public List<UnlockedAchievementVO> toVOList(List<UserAchievement> unlocked) {
+        if (unlocked == null || unlocked.isEmpty()) return Collections.emptyList();
+        List<UnlockedAchievementVO> voList = new ArrayList<>();
+        for (UserAchievement ua : unlocked) {
+            Achievement ach = ua.getAchievement();
+            if (ach == null) continue;
+            UnlockedAchievementVO vo = new UnlockedAchievementVO();
+            vo.setAchievementId(ach.getId());
+            vo.setCode(ach.getCode());
+            vo.setName(ach.getName());
+            vo.setDescription(ach.getDescription());
+            vo.setIcon(ach.getIcon());
+            vo.setCategory(ach.getCategory());
+            vo.setRarity(ach.getRarity());
+            vo.setPoints(ach.getPoints());
+            vo.setUnlockedAt(ua.getUnlockedAt() != null ? ua.getUnlockedAt().format(FMT) : null);
+            voList.add(vo);
+        }
+        return voList;
     }
 }

@@ -1,7 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
-import type { ApiResponse } from '@/types'
+import type { ApiResponse, UnlockedAchievementVO } from '@/types'
 import { useUserStore } from '@/store/user'
+import { useAchievementStore } from '@/store/achievement'
 
 // 创建axios实例
 const api: AxiosInstance = axios.create({
@@ -34,6 +35,19 @@ api.interceptors.response.use(
       ElMessage.error(res.message || '请求失败')
       return Promise.reject(new Error(res.message || '请求失败'))
     }
+
+    const unlockedFromTop = (res as any).unlockedAchievements as UnlockedAchievementVO[] | undefined
+    const unlockedFromData = res.data?.unlockedAchievements as UnlockedAchievementVO[] | undefined
+    const unlocked = unlockedFromTop || unlockedFromData
+    if (unlocked && unlocked.length > 0) {
+      try {
+        const achievementStore = useAchievementStore()
+        achievementStore.pushAchievements(unlocked)
+      } catch (e) {
+        // store 可能未初始化（如登录前）
+      }
+    }
+
     return response
   },
   (error) => {

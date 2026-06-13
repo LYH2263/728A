@@ -1,11 +1,10 @@
 package com.steam.entity;
 
+import com.steam.dto.UnlockedAchievementVO;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
 
-/**
- * 游戏评论实体类
- */
 @Data
 public class GameReview {
     private Long id;
@@ -17,8 +16,8 @@ public class GameReview {
     private Integer helpfulCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
-    // 关联字段（非数据库字段）
+
     private User user;
     private Game game;
+    private List<UnlockedAchievementVO> unlockedAchievements;
 }
